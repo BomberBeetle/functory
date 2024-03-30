@@ -3,18 +3,30 @@ using System;
 
 namespace Functory.Lang {
 	public class Function {
-		
-	//List of parameters the function accepts.
-	//I could do this the Pure-functional way, which would be just chaining 1-parameters functions returning other 1-param functions
-	//However, that would make it unintuitive to pair it with the cable model.
-	//Instead, we'll make it so an application can refer to parameters in either a named way or a nearest-free-index way.
 	
-	string[] prms;
-	Application def;
+		public Function(){
+			
+		}
+	
+		public Function(Application def, string[] parameters){
+			this.parameters = parameters;
+			this.def = def;
+		}
+	
+		
+	
+		public string[] parameters;
+		public Application def;
+	
+	
+	
+	
 	//The definition of the function is always an application
 	//A renaming, for example, would be 
 	
-	
+	//rename.parameters = original.parameters
+	//rename.def.func = original
+	//rename.def.namedParameters = (BindingOf(parameter) for parameter in parameters)
 	
 	//Though, application may be used on the eval
 	//Like:

@@ -2,46 +2,33 @@
 
 [ext_resource type="Script" path="res://root.gd" id="1_gshkb"]
 
-[node name="Root" type="Node2D"]
+[node name="Root" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_gshkb")
 
-[node name="Panel" type="Panel" parent="."]
-offset_right = 1151.0
-offset_bottom = 57.0
+[node name="HSplitContainer" type="HSplitContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Button" type="Button" parent="Panel"]
-layout_mode = 0
-offset_left = 1047.0
-offset_top = 10.0
-offset_right = 1065.0
-offset_bottom = 41.0
-text = "▷"
+[node name="VBoxContainer" type="VBoxContainer" parent="HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="Button2" type="Button" parent="Panel"]
-layout_mode = 0
-offset_left = 1086.0
-offset_top = 10.0
-offset_right = 1113.0
-offset_bottom = 41.0
-text = "▷▷"
+[node name="Panel" type="Panel" parent="HSplitContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+metadata/_edit_use_anchors_ = true
 
-[node name="Button3" type="Button" parent="Panel"]
-layout_mode = 0
-offset_left = 1000.0
-offset_top = 10.0
-offset_right = 1027.0
-offset_bottom = 41.0
-text = "||"
-
-[node name="Button4" type="Button" parent="Panel"]
-layout_mode = 0
-offset_left = 951.0
-offset_top = 10.0
-offset_right = 987.0
-offset_bottom = 41.0
-text = "↻"
-
-[node name="Button5" type="Button" parent="Panel"]
+[node name="Button5" type="Button" parent="HSplitContainer/VBoxContainer/Panel"]
 layout_mode = 0
 offset_left = 12.0
 offset_top = 10.0
@@ -49,40 +36,72 @@ offset_right = 48.0
 offset_bottom = 41.0
 text = "Salvar "
 
-[node name="Button6" type="Button" parent="Panel"]
+[node name="Button6" type="Button" parent="HSplitContainer/VBoxContainer/Panel"]
 layout_mode = 0
-offset_left = 89.0
-offset_top = 10.0
-offset_right = 138.0
-offset_bottom = 41.0
+offset_left = 226.0
+offset_top = 9.0
+offset_right = 275.0
+offset_bottom = 40.0
 text = "Novo
 "
 
-[node name="Button7" type="Button" parent="Panel"]
+[node name="Button7" type="Button" parent="HSplitContainer/VBoxContainer/Panel"]
 layout_mode = 0
-offset_left = 161.0
-offset_top = 10.0
-offset_right = 237.0
-offset_bottom = 41.0
+offset_left = 143.0
+offset_top = 9.0
+offset_right = 219.0
+offset_bottom = 40.0
 text = "Carregar
 "
 
-[node name="Graph" type="GraphEdit" parent="."]
-offset_left = 2.0
-offset_top = 56.0
-offset_right = 1148.0
-offset_bottom = 647.0
-scroll_offset = Vector2(-249, -135)
-right_disconnects = true
+[node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/VBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -127.0
+offset_top = -20.0
+offset_right = -19.0
+offset_bottom = 20.0
+grow_horizontal = 0
+grow_vertical = 2
 
-[node name="Builtin_ImportNode" type="GraphNode" parent="Graph"]
+[node name="Button" type="Button" parent="HSplitContainer/VBoxContainer/Panel/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "▷"
+
+[node name="Button2" type="Button" parent="HSplitContainer/VBoxContainer/Panel/HBoxContainer"]
+layout_mode = 2
+text = "▷▷"
+
+[node name="Button3" type="Button" parent="HSplitContainer/VBoxContainer/Panel/HBoxContainer"]
+layout_mode = 2
+text = "||"
+
+[node name="Button4" type="Button" parent="HSplitContainer/VBoxContainer/Panel/HBoxContainer"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+text = "↻"
+
+[node name="Graph" type="GraphEdit" parent="HSplitContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+right_disconnects = true
+minimap_size = Vector2(200, 150)
+show_zoom_label = true
+show_grid_buttons = false
+
+[node name="Builtin_ImportNode" type="GraphNode" parent="HSplitContainer/VBoxContainer/Graph"]
 layout_mode = 0
-offset_left = 67.0
-offset_top = 205.0
-offset_right = 191.0
-offset_bottom = 333.0
+offset_left = 95.0
+offset_top = 246.0
+offset_right = 219.0
+offset_bottom = 374.0
 mouse_filter = 1
-position_offset = Vector2(-182, 70)
+position_offset = Vector2(95, 246)
 title = "Built-in/Import"
 slot/0/left_enabled = true
 slot/0/left_type = 0
@@ -112,31 +131,31 @@ slot/2/right_color = Color(1, 1, 1, 1)
 slot/2/right_icon = null
 slot/2/draw_stylebox = true
 
-[node name="Label" type="Label" parent="Graph/Builtin_ImportNode"]
+[node name="Label" type="Label" parent="HSplitContainer/VBoxContainer/Graph/Builtin_ImportNode"]
 layout_mode = 2
 text = "param1
 "
 
-[node name="Label2" type="Label" parent="Graph/Builtin_ImportNode"]
+[node name="Label2" type="Label" parent="HSplitContainer/VBoxContainer/Graph/Builtin_ImportNode"]
 layout_mode = 2
 text = "param2
 "
 
-[node name="Label3" type="Label" parent="Graph/Builtin_ImportNode"]
+[node name="Label3" type="Label" parent="HSplitContainer/VBoxContainer/Graph/Builtin_ImportNode"]
 layout_mode = 2
 text = "param3
 "
 
-[node name="LambdaNode" type="GraphNode" parent="Graph"]
+[node name="LambdaNode" type="GraphNode" parent="HSplitContainer/VBoxContainer/Graph"]
 layout_mode = 0
-offset_left = 370.0
-offset_top = 50.0
-offset_right = 1031.0
-offset_bottom = 530.0
+offset_left = 332.0
+offset_top = 61.0
+offset_right = 993.0
+offset_bottom = 541.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 mouse_filter = 1
-position_offset = Vector2(121, -85)
+position_offset = Vector2(332, 61)
 resizable = true
 title = "Lambda"
 slot/0/left_enabled = false
@@ -194,7 +213,7 @@ slot/5/right_color = Color(1, 1, 1, 1)
 slot/5/right_icon = null
 slot/5/draw_stylebox = true
 
-[node name="GraphEdit" type="GraphEdit" parent="Graph/LambdaNode"]
+[node name="GraphEdit" type="GraphEdit" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode"]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_force_pass_scroll_events = false
@@ -210,7 +229,7 @@ show_grid_buttons = false
 show_minimap_button = false
 show_arrange_button = false
 
-[node name="GraphNode" type="GraphNode" parent="Graph/LambdaNode/GraphEdit"]
+[node name="GraphNode" type="GraphNode" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit"]
 layout_mode = 0
 offset_left = 301.0
 offset_top = 158.0
@@ -247,22 +266,22 @@ slot/2/right_color = Color(1, 1, 1, 1)
 slot/2/right_icon = null
 slot/2/draw_stylebox = true
 
-[node name="Label" type="Label" parent="Graph/LambdaNode/GraphEdit/GraphNode"]
+[node name="Label" type="Label" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit/GraphNode"]
 layout_mode = 2
 text = "param1
 "
 
-[node name="Label2" type="Label" parent="Graph/LambdaNode/GraphEdit/GraphNode"]
+[node name="Label2" type="Label" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit/GraphNode"]
 layout_mode = 2
 text = "param2
 "
 
-[node name="Label3" type="Label" parent="Graph/LambdaNode/GraphEdit/GraphNode"]
+[node name="Label3" type="Label" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit/GraphNode"]
 layout_mode = 2
 text = "param3
 "
 
-[node name="GraphNode2" type="GraphNode" parent="Graph/LambdaNode/GraphEdit"]
+[node name="GraphNode2" type="GraphNode" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit"]
 layout_mode = 0
 offset_left = 24.0
 offset_top = 48.0
@@ -272,7 +291,7 @@ mouse_filter = 1
 position_offset = Vector2(24, 48)
 draggable = false
 title = "param1"
-slot/0/left_enabled = false
+slot/0/left_enabled = true
 slot/0/left_type = 0
 slot/0/left_color = Color(1, 1, 1, 1)
 slot/0/left_icon = null
@@ -282,10 +301,10 @@ slot/0/right_color = Color(1, 1, 1, 1)
 slot/0/right_icon = null
 slot/0/draw_stylebox = true
 
-[node name="Control" type="Control" parent="Graph/LambdaNode/GraphEdit/GraphNode2"]
+[node name="Control" type="Control" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit/GraphNode2"]
 layout_mode = 2
 
-[node name="GraphNode3" type="GraphNode" parent="Graph/LambdaNode/GraphEdit"]
+[node name="GraphNode3" type="GraphNode" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit"]
 layout_mode = 0
 offset_left = 21.0
 offset_top = 167.0
@@ -295,7 +314,7 @@ mouse_filter = 1
 position_offset = Vector2(21, 167)
 draggable = false
 title = "param2"
-slot/0/left_enabled = false
+slot/0/left_enabled = true
 slot/0/left_type = 0
 slot/0/left_color = Color(1, 1, 1, 1)
 slot/0/left_icon = null
@@ -305,10 +324,10 @@ slot/0/right_color = Color(1, 1, 1, 1)
 slot/0/right_icon = null
 slot/0/draw_stylebox = true
 
-[node name="Control" type="Control" parent="Graph/LambdaNode/GraphEdit/GraphNode3"]
+[node name="Control" type="Control" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit/GraphNode3"]
 layout_mode = 2
 
-[node name="GraphNode4" type="GraphNode" parent="Graph/LambdaNode/GraphEdit"]
+[node name="GraphNode4" type="GraphNode" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit"]
 layout_mode = 0
 offset_left = 19.0
 offset_top = 282.0
@@ -318,7 +337,7 @@ mouse_filter = 1
 position_offset = Vector2(19, 282)
 draggable = false
 title = "param3"
-slot/0/left_enabled = false
+slot/0/left_enabled = true
 slot/0/left_type = 0
 slot/0/left_color = Color(1, 1, 1, 1)
 slot/0/left_icon = null
@@ -328,10 +347,10 @@ slot/0/right_color = Color(1, 1, 1, 1)
 slot/0/right_icon = null
 slot/0/draw_stylebox = true
 
-[node name="Control" type="Control" parent="Graph/LambdaNode/GraphEdit/GraphNode4"]
+[node name="Control" type="Control" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit/GraphNode4"]
 layout_mode = 2
 
-[node name="GraphNode5" type="GraphNode" parent="Graph/LambdaNode/GraphEdit"]
+[node name="GraphNode5" type="GraphNode" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit"]
 layout_mode = 1
 offset_left = 530.0
 offset_top = 168.0
@@ -351,30 +370,107 @@ slot/0/right_color = Color(1, 1, 1, 1)
 slot/0/right_icon = null
 slot/0/draw_stylebox = true
 
-[node name="Control" type="Control" parent="Graph/LambdaNode/GraphEdit/GraphNode5"]
+[node name="Control" type="Control" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/GraphEdit/GraphNode5"]
 layout_mode = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="Graph/LambdaNode"]
+[node name="CenterContainer" type="CenterContainer" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Graph/LambdaNode/CenterContainer"]
+[node name="Label" type="Label" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/CenterContainer"]
 layout_mode = 2
-text = "Parametros"
+text = "Parâmetros"
 
-[node name="Label" type="Label" parent="Graph/LambdaNode"]
+[node name="Label" type="LineEdit" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode"]
 layout_mode = 2
 text = "param1"
 
-[node name="Label2" type="Label" parent="Graph/LambdaNode"]
+[node name="Button" type="Button" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/Label"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -4.0
+offset_bottom = 4.0
+grow_horizontal = 0
+grow_vertical = 2
+text = "X"
+
+[node name="Label2" type="LineEdit" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode"]
 layout_mode = 2
 text = "param2"
 
-[node name="Label3" type="Label" parent="Graph/LambdaNode"]
+[node name="Button" type="Button" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/Label2"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -4.0
+offset_bottom = 4.0
+grow_horizontal = 0
+grow_vertical = 2
+text = "X"
+
+[node name="Label3" type="LineEdit" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode"]
 layout_mode = 2
 text = "param3"
 
-[node name="Button" type="Button" parent="Graph/LambdaNode"]
+[node name="Button" type="Button" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode/Label3"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -4.0
+offset_bottom = 4.0
+grow_horizontal = 0
+grow_vertical = 2
+text = "X"
+
+[node name="Button" type="Button" parent="HSplitContainer/VBoxContainer/Graph/LambdaNode"]
 layout_mode = 2
 text = "+ Param"
 
-[connection signal="connection_request" from="Graph" to="." method="_on_graph_edit_connection_request"]
+[node name="ConsNode" type="GraphNode" parent="HSplitContainer/VBoxContainer/Graph"]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 115.0
+offset_right = 221.0
+offset_bottom = 201.0
+mouse_filter = 1
+position_offset = Vector2(80, 115)
+title = "Inteiro"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="LineEdit" type="LineEdit" parent="HSplitContainer/VBoxContainer/Graph/ConsNode"]
+layout_mode = 2
+text = "413"
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="HSplitContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+text = "Funções"
+
+[node name="Tree" type="Tree" parent="HSplitContainer/VBoxContainer2"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[connection signal="connection_request" from="HSplitContainer/VBoxContainer/Graph" to="." method="_on_graph_edit_connection_request"]
