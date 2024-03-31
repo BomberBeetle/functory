@@ -13,32 +13,44 @@ public class Application
 		//Not a pretty solution to be sure, but right now it's the only way I can think of and this things
 		//gotta be out of the door pretty soon.
 		
-		if(func == null) return;
+		
 		
 		bindings = new List<BindingOf>();
 		
+		if(func != null){
+		
 		Function fcopy = new Function();
 		
-		if(func.def is BindingOf){
-			BindingOf binddef = (BindingOf) func.def;
+		if(func.def != null){
+			if(func.def is BindingOf){
+				BindingOf binddef = (BindingOf) func.def;
 			
-			BindingOf newbind = new BindingOf(binddef.symbol);
-			fcopy.def = newbind;
+				BindingOf newbind = new BindingOf(binddef.symbol);
+				fcopy.def = newbind;
 			
-			bindings.Add(newbind);	
+				bindings.Add(newbind);	
+				GD.Print("binding found");
+			}
+		
+			else {
+				fcopy.def = new Application(func.def.func, func.def.namedParams, func.def.positionalParams);
+				GD.Print("farted");
+			}
+		
+			resolveParams(fcopy.def, bindings);
+			GD.Print("resolved params");
 		}
-		
-		else{
-			fcopy.def = new Application(func.def.func, func.def.namedParams, func.def.positionalParams);
-		}
-		
-		resolveParams(fcopy.def, bindings);
-		
 		this.fdef = fcopy.def;
+		}
+		
+		
+		this.namedParams = namedParams;
+		this.positionalParams = positionalParams;
 	}
 	
 	public static void resolveParams(Application a, List<BindingOf> bindingList){
 		if(a.namedParams != null){
+			GD.Print("not null :D");
 			Dictionary<string, Application> nparams = new Dictionary<string, Application>();
 			foreach(string key in a.namedParams.Keys){
 				Application newAp;
@@ -57,6 +69,9 @@ public class Application
 			}
 			
 			a.namedParams = nparams;
+		}
+		else {
+			GD.Print("named params null");
 		}
 		
 		if(a.positionalParams != null){
