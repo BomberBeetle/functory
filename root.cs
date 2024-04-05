@@ -17,7 +17,7 @@ public partial class root : Control
 		Application[] positionalParams = new Application[0];
 		
 		Application def = new Application(new Sum(), namedParams, positionalParams);
-		Function rebindAddition = new Function(new BindingOf("x"), parameters);
+		Function rebindAddition = new Function(new BindingOf("f"), parameters);
 		
 		GD.Print("rebindAdditon done");
 		
@@ -25,14 +25,11 @@ public partial class root : Control
 		var three = new Application(new IntegerConstructor(3), null, null);
 		
 		var bruh = new Dictionary<string,Application>();
-		bruh.Add("a", two);
-		bruh.Add("b", three);
 		
-		Application deez = new Application(rebindAddition,bruh,new Application[]{});
+		Application deez = new Application(rebindAddition,bruh,new Application[]{def, two, three});
+		GD.Print(deez.bindings);
 		
-		GD.Print(deez.bindings.Count);
-		
-		GD.Print("deez done");
+		GD.Print(Interpreter.eval(deez));
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.

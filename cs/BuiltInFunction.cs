@@ -13,6 +13,7 @@ public class Sum : BuiltInFunction{
 			this.def = null;
 		}
 		public override object eval(Dictionary<string, object> parameters){
+			GD.Print(string.Join(System.Environment.NewLine, parameters));
 			int a = (int) parameters["a"];
 			int b = (int) parameters["b"];
 			return (a + b);

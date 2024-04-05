@@ -13,7 +13,7 @@ public class Application
 		//Not a pretty solution to be sure, but right now it's the only way I can think of and this things
 		//gotta be out of the door pretty soon.
 		
-		
+		this.func = func;
 		
 		bindings = new List<BindingOf>();
 		
@@ -25,11 +25,12 @@ public class Application
 			if(func.def is BindingOf){
 				BindingOf binddef = (BindingOf) func.def;
 			
-				BindingOf newbind = new BindingOf(binddef.symbol);
+				BindingOf newbind = new BindingOf(binddef.symbol, binddef.func, binddef.namedParams, binddef.positionalParams);
 				fcopy.def = newbind;
 			
 				bindings.Add(newbind);	
 				GD.Print("binding found");
+				GD.Print(newbind.namedParams);
 			}
 		
 			else {
@@ -97,7 +98,7 @@ public class Application
 	}
 	
 	//A private copy of the applied function's definition which stores its bindings locally.
-	private Application fdef;
+	public Application fdef;
 	
 	//The function which is being applied.
 	public Function func;
@@ -125,6 +126,7 @@ public class Application
 		}
 		return unresolvedBindings;
 	}
+	
 	
 	}
 }
