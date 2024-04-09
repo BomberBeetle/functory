@@ -14,50 +14,43 @@ public class Application
 		//gotta be out of the door pretty soon.
 		
 		this.func = func;
-		
-		bindings = new List<BindingOf>();
-		
-		if(func != null){
-		
-		Function fcopy = new Function();
-		
-		if(func.def != null){
-			if(func.def is BindingOf){
-				BindingOf binddef = (BindingOf) func.def;
-			
-				BindingOf newbind = new BindingOf(binddef.symbol, binddef.func, binddef.namedParams, binddef.positionalParams);
-				fcopy.def = newbind;
-			
-				bindings.Add(newbind);	
-				GD.Print("binding found");
-				GD.Print(newbind.namedParams);
-			}
-		
-			else {
-				fcopy.def = new Application(func.def.func, func.def.namedParams, func.def.positionalParams);
-				GD.Print("farted");
-			}
-		
-			resolveParams(fcopy.def, bindings);
-			GD.Print("resolved params");
-		}
-		this.fdef = fcopy.def;
-		}
-		
-		
 		this.namedParams = namedParams;
 		this.positionalParams = positionalParams;
+		
+		instanceBindingCopies(this);
 	}
 	
-	public static void resolveParams(Application a, List<BindingOf> bindingList){
+	public static List<BindingOf> instanceBindingCopies(Application a){
+		List<BindingOf> bindingList = new List<BindingOf>();
+		if(a.func != null){
+			GD.Print("Application: Trying to instance binding copies for application with func =" + a.func);
+			Function fcopy = new Function();
+			if(a.func.def != null){
+				if(a.func.def is BindingOf){
+					BindingOf b = (BindingOf) a.func.def;
+					BindingOf newPrm =  new BindingOf(b.symbol, b.func, b.namedParams, b.positionalParams);
+					bindingList.Add(newPrm);
+					fcopy.def = newPrm;
+				}
+				else
+				{
+					fcopy.def = new Application(a.func.def.func, a.func.def.namedParams, a.func.def.positionalParams);
+				}
+				
+				bindingList.AddRange(instanceBindingCopies(fcopy.def));
+				
+			}
+			
+			a.fdef = fcopy.def;
+		}
+		
 		if(a.namedParams != null){
-			GD.Print("not null :D");
 			Dictionary<string, Application> nparams = new Dictionary<string, Application>();
 			foreach(string key in a.namedParams.Keys){
 				Application newAp;
 				if(a.namedParams[key] is BindingOf){
 					BindingOf b = (BindingOf) a.namedParams[key];
-					BindingOf newPrm =  new BindingOf(b.symbol);
+					BindingOf newPrm =  new BindingOf(b.symbol, b.func, b.namedParams, b.positionalParams);
 					bindingList.Add(newPrm);
 					newAp = newPrm;
 				}
@@ -66,22 +59,23 @@ public class Application
 					newAp = new Application(oldAp.func, oldAp.namedParams, oldAp.positionalParams);
 				}
 				nparams.Add(key, newAp);
-				resolveParams(newAp, bindingList);
+				bindingList.AddRange(instanceBindingCopies(newAp));
 			}
-			
 			a.namedParams = nparams;
 		}
 		else {
-			GD.Print("named params null");
+			//GD.Print("resolveParams: named params null");
 		}
 		
 		if(a.positionalParams != null){
+			GD.Print("Application: now generating binding instances for pos params");
 			Application[] posPrms = new Application[a.positionalParams.Length];
 			for(int i = 0; i < a.positionalParams.Length; i++){
+				
 				Application newAp;
 				if(a.positionalParams[i] is BindingOf){
 					BindingOf b = (BindingOf) a.positionalParams[i];
-					BindingOf newPrm =  new BindingOf(b.symbol);
+					BindingOf newPrm =  new BindingOf(b.symbol, b.func, b.namedParams, b.positionalParams);
 					bindingList.Add(newPrm);
 					newAp = newPrm;
 				}
@@ -90,10 +84,17 @@ public class Application
 					newAp = new Application(oldAp.func, oldAp.namedParams, oldAp.positionalParams);
 				}
 				posPrms[i] = newAp;
-				resolveParams(newAp, bindingList);
+				bindingList.AddRange(instanceBindingCopies(newAp));
 			}
+			a.positionalParams = posPrms;
+		}
+		else{
+			
 		}
 		
+		a.bindings = bindingList;
+		
+		return bindingList;
 		
 	}
 	

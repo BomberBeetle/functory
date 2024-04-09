@@ -16,20 +16,27 @@ public partial class root : Control
 		
 		Application[] positionalParams = new Application[0];
 		
+		GD.Print("root: instance def");
 		Application def = new Application(new Sum(), namedParams, positionalParams);
-		Function rebindAddition = new Function(new BindingOf("f"), parameters);
+		GD.Print("root: def instanced with " + def.bindings.Count + " binds");
 		
-		GD.Print("rebindAdditon done");
+		Function rebind = new Function(new BindingOf("f"), parameters);
 		
+		GD.Print("root: Making integerConstructor apps");
 		var two = new Application(new IntegerConstructor(2), null, null);
 		var three = new Application(new IntegerConstructor(3), null, null);
 		
-		var bruh = new Dictionary<string,Application>();
+		GD.Print("root: instance rebindening");
+		Application theRebindening = new Application(rebind,null,null);	
+		GD.Print("root: rebindening instanced with " + theRebindening.bindings.Count + " binds");
 		
-		Application deez = new Application(rebindAddition,bruh,new Application[]{def, two, three});
-		GD.Print(deez.bindings);
+		GD.Print("root: instance rebindapalooza");
+		Function bebinb = new Function(theRebindening, null);
 		
-		GD.Print(Interpreter.eval(deez));
+		Application rebindapalooza = new Application(bebinb,null, new Application[]{def, three, two});
+		GD.Print("root: rbpalooza instanced with " + rebindapalooza.bindings.Count + " binds");
+		GD.Print("root: start eval");
+		GD.Print(Interpreter.eval(rebindapalooza));
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.

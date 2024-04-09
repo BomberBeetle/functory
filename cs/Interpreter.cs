@@ -8,8 +8,8 @@ namespace Functory.Lang{
 public class Interpreter
 {
 		
-	public static void resolveBindings(Application a){
-		GD.Print(a.bindings);
+	public static int resolveBindings(Application a, int offset){ //returns number of positional bindings resolved
+		int positionalsUsed = 0;
 		if(a.namedParams != null){
 			foreach(string key in a.namedParams.Keys){
 				foreach(BindingOf b in a.getUnresolvedBindings()){
@@ -20,7 +20,7 @@ public class Interpreter
 						b.namedParams = a.namedParams[key].namedParams;
 						b.positionalParams = a.namedParams[key].positionalParams;
 						b.resolved = true;
-						GD.Print("resolved binding with symbol " + b.symbol);
+						GD.Print("Interpreter: resolved binding with symbol " + b.symbol);
 					}
 				}
 			}
@@ -28,80 +28,87 @@ public class Interpreter
 		
 		if(a.positionalParams != null){
 			HashSet<string> unresolvedParams = new HashSet<string>();
+			
 			foreach(BindingOf b in a.bindings){
 				if(!b.resolved){
 					unresolvedParams.Add(b.symbol);
 				}
 			}
+			GD.Print("Interpreter: unresolved params: " + unresolvedParams.Count);
 			
 			string[] urParamsArray = new string[unresolvedParams.Count];
 			unresolvedParams.CopyTo(urParamsArray);
 			
-			for(int i = 0; i < a.positionalParams.Length; i++){
+			for(int i = 0; i < urParamsArray.Length; i++){
+				bool resolvedParam = false;
 				foreach(BindingOf b in a.bindings){
 					if(b.symbol == urParamsArray[i]){
-						b.fdef = a.positionalParams[i].fdef;
-						b.func = a.positionalParams[i].func;
-						b.namedParams = a.positionalParams[i].namedParams;
-						b.positionalParams = a.positionalParams[i].positionalParams;
+						GD.Print("Resolved binding with symbol " + b.symbol + " with parameter " + i);
+						b.fdef = a.positionalParams[i+offset].fdef;
+						b.func = a.positionalParams[i+offset].func;
+						b.namedParams = a.positionalParams[i+offset].namedParams;
+						b.positionalParams = a.positionalParams[i+offset].positionalParams;
 						b.resolved = true;
+						resolvedParam = true;
 					}
 				}
+				if(resolvedParam) positionalsUsed++;
 			}
 		}
+		return positionalsUsed;
 	}	
 		
 	public static object eval(Application a){
 		
 		if(a is BindingOf){
 			if(!((BindingOf) a).resolved){
+				GD.Print("Interpreter: tried to eval unresolved BindingOf");
 				return a;
 			}
 		}
 		
-		resolveBindings(a);
-		if(a.fdef is BindingOf){
-			BindingOf defb = (BindingOf) a.fdef;
-			foreach(string k in defb.namedParams.Keys){
-				if(defb.namedParams[k] is BindingOf){
-					a.bindings.Add((BindingOf)defb.namedParams[k]);
-				}
-			}
-			resolveBindings(a);
-		}
+		int offset = resolveBindings(a, 0);
+		
+		GD.Print("Interpreter: final binding count = " + a.bindings.Count);
 		
 		Dictionary<string, object> parameters = new Dictionary<string, object>();
+		
 		if(a.namedParams != null) {
 			foreach(string k in a.namedParams.Keys){
-				GD.Print("handling param " + k);
+				GD.Print("Interpreter: handling param " + k);
 				parameters.Add(k, eval(a.namedParams[k]));
-				GD.Print(k + " evald to " + parameters[k]);
+				GD.Print("Interpreter: " + k + " evald to " + parameters[k]);
 			}
 		}
 		
 		if(a.positionalParams != null){
 			HashSet<string> urps = new HashSet<string>();
 			foreach(BindingOf b in a.bindings){
-				if(!b.resolved){
+				if(b.resolved){
 					urps.Add(b.symbol);
 				}
 			}
 			string[] urpsArray = new string[urps.Count];
 			urps.CopyTo(urpsArray);
 			for(int i = 0; i < a.positionalParams.Length; i++){
+				GD.Print("About to eval positional param " + i);
 				parameters.Add(urpsArray[i], eval(a.positionalParams[i]));
+				GD.Print("evaled to " + parameters[urpsArray[i]]);
 			}
 		}
+		GD.Print("Interpreter: Resulting Params:");
+		GD.Print(string.Join(System.Environment.NewLine, parameters));
 		
-		//then the positional params...
+		//then the positional/ params...
 		//EVAL (resolved?) PARAMETERS AND ADD THEM TO THE PARAMETERS DICTIONARY
+		GD.Print("Interpreter: eval type is " + a.func);
 		
 		if(a.func is BuiltInFunction){
 			
 			if(!a.func.parameters.Except(parameters.Keys).Any() && a.getUnresolvedBindings().Count == 0){ 
 				//paremeters contains all parameters of func
 				//ALSO CHECK IF THE BINDINGS ARE RESOLVED!!!! OTHERWISE ITS GOING TO SHIT ITSELF
-				GD.Print("about to eval builtin");
+				GD.Print("Interpreter: about to eval builtin");
 				GD.Print(a.func);
 				return ((BuiltInFunction)a.func).eval(parameters);
 			}
