@@ -71,29 +71,41 @@ public class Interpreter
 		
 		GD.Print("Interpreter: final binding count = " + a.bindings.Count);
 		
-		Dictionary<string, object> parameters = new Dictionary<string, object>();
+		Dictionary<string, bool> paramsHandled = new Dictionary<string, bool>();
+		if(a.func.parameters != null) foreach(string s in a.func.parameters){
+			paramsHandled.Add(s, false);
+		}
+		
+		Dictionary<string, Application> parameters = new Dictionary<string, Application>();
 		
 		if(a.namedParams != null) {
 			foreach(string k in a.namedParams.Keys){
 				GD.Print("Interpreter: handling param " + k);
-				parameters.Add(k, eval(a.namedParams[k]));
-				GD.Print("Interpreter: " + k + " evald to " + parameters[k]);
+				parameters.Add(k, a.namedParams[k]);
+				//defer evaling to builtins
+				if(paramsHandled.ContainsKey(k)){
+					paramsHandled[k] = true;
+				}
 			}
 		}
 		
 		if(a.positionalParams != null){
-			HashSet<string> urps = new HashSet<string>();
+			SortedSet<string> resolvedParams = new SortedSet<string>();
 			foreach(BindingOf b in a.bindings){
 				if(b.resolved){
-					urps.Add(b.symbol);
+					resolvedParams.Add(b.symbol);
 				}
 			}
-			string[] urpsArray = new string[urps.Count];
-			urps.CopyTo(urpsArray);
+			
+			foreach(string k in paramsHandled.Keys){
+				if(!paramsHandled[k]) resolvedParams.Add(k);
+			}
+			
+			string[] urpsArray = new string[resolvedParams.Count];
+			resolvedParams.CopyTo(urpsArray);
 			for(int i = 0; i < a.positionalParams.Length; i++){
-				GD.Print("About to eval positional param " + i);
-				parameters.Add(urpsArray[i], eval(a.positionalParams[i]));
-				GD.Print("evaled to " + parameters[urpsArray[i]]);
+				GD.Print("Interpreter: Added positional param " + i + " with symbol " + urpsArray[i]);
+				parameters.Add(urpsArray[i], a.positionalParams[i]);
 			}
 		}
 		GD.Print("Interpreter: Resulting Params:");
@@ -101,10 +113,10 @@ public class Interpreter
 		
 		//then the positional/ params...
 		//EVAL (resolved?) PARAMETERS AND ADD THEM TO THE PARAMETERS DICTIONARY
-		GD.Print("Interpreter: eval type is " + a.func);
+		GD.Print("Interpreter: eval func type is " + a.func);
 		
 		if(a.func is BuiltInFunction){
-			
+			GD.Print("Interpreter: eval func type is builtin");
 			if(!a.func.parameters.Except(parameters.Keys).Any() && a.getUnresolvedBindings().Count == 0){ 
 				//paremeters contains all parameters of func
 				//ALSO CHECK IF THE BINDINGS ARE RESOLVED!!!! OTHERWISE ITS GOING TO SHIT ITSELF

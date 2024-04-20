@@ -36,9 +36,38 @@ public partial class root : Control
 		Application rebindapalooza = new Application(bebinb,null, new Application[]{def, three, two});
 		GD.Print("root: rbpalooza instanced with " + rebindapalooza.bindings.Count + " binds");
 		GD.Print("root: start eval");
-		GD.Print(Interpreter.eval(rebindapalooza));
+		GD.Print("root: rbplz result = ", Interpreter.eval(rebindapalooza));
+		
+		
+		GD.Print("root: Instancing application of BooleanConstructor");
+		var tru = new Application(new BooleanConstructor(true), null, null);
+		GD.Print("root: instancing if_test");
+		Application if_test = new Application(new If(), null, new Application[]{tru, two, rebindapalooza});
+		GD.Print("root: if_test result = " + Interpreter.eval(if_test));
+		
+		GD.Print("root: start recurseDef");
+		Application recurseDef = new Application(new If(), null, new Application[]{}, false);
+		Function recurse = new Function(recurseDef, new string[]{"x"});
+		GD.Print("root: recurse hashcode is " + recurse.GetHashCode());
+		Dictionary<string, Application> recurseDic = new Dictionary<string, Application>();
+		recurseDic.Add("x", new BindingOf("x"));
+		recurseDic.Add("condition", new Application(
+			new Equals(), null, new Application[]{new BindingOf("x"), new Application(new IntegerConstructor(1), null, new Application[]{})}
+		));
+		recurseDic.Add("then", new Application(new IntegerConstructor(1), null, new Application[]{}));
+		GD.Print("root: add recursive param");
+		recurseDic.Add("else", new Application(recurse,null,new Application[]{
+			new Application(new Sum(), null, new Application[]{new BindingOf("x"), new Application(new IntegerConstructor(-1), null, new Application[]{})})
+		}));
+		
+		recurseDef.updateNamedParams(recurseDic);
+		GD.Print("root: recurseDef bindings: " + recurseDef.bindings.Count);
+		GD.Print("root: recurseDef unassigned binds = " + recurseDef.getUnassignedBindings() );
+		Application recurseApp = new Application(recurse, null, new Application[]{if_test});
+		//GD.Print("root: recursive eval result is " + Interpreter.eval(recurseApp));
 	}
-
+	
+	
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
