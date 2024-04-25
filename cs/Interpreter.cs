@@ -8,10 +8,33 @@ namespace Functory.Lang{
 public class Interpreter
 {
 		
-	public static int resolveBindings(Application a, int offset){ //returns number of positional bindings resolved
+	public static Tuple<Dictionary<string, Application>, int> resolveBindings(Application a, Dictionary<string, Application> namedStacked, Application[] positionalStacked){ //returns number of positional bindings resolved
 		int positionalsUsed = 0;
+		Dictionary<string, Application> unusedNamedParams = new Dictionary<string,Application>();
+		
+		if(namedStacked != null){
+				foreach(string key in namedStacked.Keys){
+					bool keyUsed = false;
+					foreach(BindingOf b in a.getUnresolvedBindings()){
+						if(b.symbol == key){
+							GD.Print(key);
+							b.func = namedStacked[key].func;
+							b.fdef = namedStacked[key].fdef;
+							b.namedParams = namedStacked[key].namedParams;
+							b.positionalParams = namedStacked[key].positionalParams;
+							b.resolved = true;
+							keyUsed = true;
+							GD.Print("Interpreter: (stacked/named) resolved binding with symbol " + b.symbol);
+						}
+					}
+					if(!keyUsed) unusedNamedParams.Add(key, namedStacked[key]);
+					
+				}
+			}
+		
 		if(a.namedParams != null){
 			foreach(string key in a.namedParams.Keys){
+				bool keyUsed = false;
 				foreach(BindingOf b in a.getUnresolvedBindings()){
 					if(b.symbol == key){
 						GD.Print(key);
@@ -20,11 +43,16 @@ public class Interpreter
 						b.namedParams = a.namedParams[key].namedParams;
 						b.positionalParams = a.namedParams[key].positionalParams;
 						b.resolved = true;
-						GD.Print("Interpreter: resolved binding with symbol " + b.symbol);
+						keyUsed = true;
+						GD.Print("Interpreter: (named) resolved binding with symbol " + b.symbol + " with app with func =" + a.namedParams[key].func);
 					}
 				}
+				if(!keyUsed) unusedNamedParams.Add(key, a.namedParams[key]);
 			}
+			
 		}
+		
+		
 		
 		if(a.positionalParams != null){
 			HashSet<string> unresolvedParams = new HashSet<string>();
@@ -34,32 +62,33 @@ public class Interpreter
 					unresolvedParams.Add(b.symbol);
 				}
 			}
-			GD.Print("Interpreter: unresolved params: " + unresolvedParams.Count);
+			GD.Print("Interpreter: unresolved params after named resolving: " + unresolvedParams.Count);
 			
 			string[] urParamsArray = new string[unresolvedParams.Count];
 			unresolvedParams.CopyTo(urParamsArray);
 			
-			for(int i = 0; i < urParamsArray.Length; i++){
+			for(int i = 0; i < urParamsArray.Length && i < a.positionalParams.Length; i++){
 				bool resolvedParam = false;
 				foreach(BindingOf b in a.bindings){
 					if(b.symbol == urParamsArray[i]){
-						GD.Print("Resolved binding with symbol " + b.symbol + " with parameter " + i);
-						b.fdef = a.positionalParams[i+offset].fdef;
-						b.func = a.positionalParams[i+offset].func;
-						b.namedParams = a.positionalParams[i+offset].namedParams;
-						b.positionalParams = a.positionalParams[i+offset].positionalParams;
+						GD.Print("Interpreter: (positional) Resolved binding with symbol " + b.symbol + " with parameter " + i);
+						b.fdef = a.positionalParams[i].fdef;
+						b.func = a.positionalParams[i].func;
+						b.namedParams = a.positionalParams[i].namedParams;
+						b.positionalParams = a.positionalParams[i].positionalParams;
 						b.resolved = true;
 						resolvedParam = true;
 					}
 				}
 				if(resolvedParam) positionalsUsed++;
 			}
+			
 		}
-		return positionalsUsed;
+		return Tuple.Create(unusedNamedParams, positionalsUsed);
 	}	
 		
-	public static object eval(Application a){
-		
+	public static object eval(Application a, Dictionary<string, Application> stackedNamedParams = null, Application[] stackedPositionalParams = null){
+		Application.instanceBindingCopies(a, null);
 		if(a is BindingOf){
 			if(!((BindingOf) a).resolved){
 				GD.Print("Interpreter: tried to eval unresolved BindingOf");
@@ -67,14 +96,25 @@ public class Interpreter
 			}
 		}
 		
-		int offset = resolveBindings(a, 0);
+		if(stackedPositionalParams != null && a.positionalParams != null){
+			Application[] newPPrms = new Application[a.positionalParams.Length+stackedPositionalParams.Length];
+			Array.Copy(a.positionalParams, 0, newPPrms, 0, a.positionalParams.Length);
+			Array.Copy(stackedPositionalParams, 0, newPPrms, a.positionalParams.Length, stackedPositionalParams.Length);
+		}
+		else if(stackedPositionalParams != null && a.positionalParams == null){
+			a.positionalParams = stackedPositionalParams;
+		}
+		
+		
+		(Dictionary<string, Application> unusedNamedParams, int usedPositionalParams) = resolveBindings(a, stackedNamedParams, stackedPositionalParams);
 		
 		GD.Print("Interpreter: final binding count = " + a.bindings.Count);
 		
 		Dictionary<string, bool> paramsHandled = new Dictionary<string, bool>();
-		if(a.func.parameters != null) foreach(string s in a.func.parameters){
-			paramsHandled.Add(s, false);
-		}
+		if(a.func.parameters != null) 
+			foreach(string s in a.func.parameters){
+				paramsHandled.Add(s, false);
+			}
 		
 		Dictionary<string, Application> parameters = new Dictionary<string, Application>();
 		
@@ -103,7 +143,7 @@ public class Interpreter
 			
 			string[] urpsArray = new string[resolvedParams.Count];
 			resolvedParams.CopyTo(urpsArray);
-			for(int i = 0; i < a.positionalParams.Length; i++){
+			for(int i = 0; i < a.positionalParams.Length && i < urpsArray.Length; i++){
 				GD.Print("Interpreter: Added positional param " + i + " with symbol " + urpsArray[i]);
 				parameters.Add(urpsArray[i], a.positionalParams[i]);
 			}
@@ -132,8 +172,14 @@ public class Interpreter
 			}
 			
 		}
-		else{
-			return eval(a.fdef);
+		else{	
+			Application[] stackedParams = null;
+			if(a.positionalParams != null){ 
+				int paramsToPass = a.positionalParams.Length-usedPositionalParams;
+				stackedParams = new Application[paramsToPass];
+				Array.Copy(a.positionalParams, a.positionalParams.Length-paramsToPass, stackedParams, 0, paramsToPass);
+			}
+			return eval(a.fdef, unusedNamedParams, stackedParams);
 		}
 	}	
 }

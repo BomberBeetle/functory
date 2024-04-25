@@ -8,16 +8,17 @@ namespace Functory.Lang {
 			
 		}
 	
-		public Function(Application def, string[] parameters){
+		public Function(Application def, string[] parameters, string name="unnamedFunction"){
 			this.parameters = parameters;
 			this.def = def;
+			this.name = name;
 		}
 	
 		
 	
 		public string[] parameters;
 		public Application def;
-	
+		public string name;
 	
 	
 	

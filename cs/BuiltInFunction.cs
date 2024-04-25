@@ -11,10 +11,13 @@ namespace Functory.Lang {
 		public Sum(){
 			this.parameters = new string[]{"a", "b"};
 			this.def = null;
+			this.name = "Sum";
 		}
 		public override object eval(Dictionary<string, Application> parameters){
 			
+			GD.Print("BuiltIn:Sum : param a is " + parameters["a"]);
 			int a = (int) Interpreter.eval(parameters["a"]);
+			
 			int b = (int) Interpreter.eval(parameters["b"]);
 			return (a + b);
 		}
@@ -26,6 +29,7 @@ namespace Functory.Lang {
 			this.value = value;
 			this.def = null;
 			this.parameters = new string[]{};
+			this.name = "IntegerConstructor";
 		}
 	
 		public override object eval(Dictionary<string, Application> parameters){
@@ -40,6 +44,7 @@ namespace Functory.Lang {
 			this.value = value;
 			this.def = null;
 			this.parameters = new string[]{};
+			this.name = "BooleanConstructor";
 		}
 		
 		public override object eval(Dictionary<string, Application> parameters){
@@ -51,6 +56,7 @@ namespace Functory.Lang {
 		public If(){
 			this.def = null;
 			this.parameters = new string[]{"condition", "then", "else"};
+			this.name = "IfFunc";
 		}
 		
 		public override object eval(Dictionary<string, Application> parameters){
@@ -68,6 +74,7 @@ namespace Functory.Lang {
 		public Equals(){
 			this.def = null;
 			this.parameters = new string[]{"a", "b"};
+			this.name = "Equals";
 		}
 		
 		public override object eval(Dictionary<string, Application> parameters){
@@ -81,6 +88,7 @@ namespace Functory.Lang {
 		public Not(){
 			this.def = null;
 			this.parameters = new string[]{"x"};
+			this.name = "Not";
 		}
 		public override object eval(Dictionary<string, Application> parameters){
 			bool booly = (bool) Interpreter.eval(parameters["x"]);

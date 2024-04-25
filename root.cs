@@ -8,7 +8,7 @@ public partial class root : Control
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		string[] parameters = new string[] {"a", "b"};
+		string[] parameters = new string[] {"f", "a", "b"};
 		
 		Dictionary<string, Application> namedParams = new Dictionary<string, Application>();
 		namedParams.Add("a", new BindingOf("a"));
@@ -20,7 +20,7 @@ public partial class root : Control
 		Application def = new Application(new Sum(), namedParams, positionalParams);
 		GD.Print("root: def instanced with " + def.bindings.Count + " binds");
 		
-		Function rebind = new Function(new BindingOf("f"), parameters);
+		Function rebind = new Function(new BindingOf("f"), parameters, "rebind");  //f' = f a b
 		
 		GD.Print("root: Making integerConstructor apps");
 		var two = new Application(new IntegerConstructor(2), null, null);
@@ -31,7 +31,7 @@ public partial class root : Control
 		GD.Print("root: rebindening instanced with " + theRebindening.bindings.Count + " binds");
 		
 		GD.Print("root: instance rebindapalooza");
-		Function bebinb = new Function(theRebindening, null);
+		Function bebinb = new Function(theRebindening, null,"bebinb");
 		
 		Application rebindapalooza = new Application(bebinb,null, new Application[]{def, three, two});
 		GD.Print("root: rbpalooza instanced with " + rebindapalooza.bindings.Count + " binds");

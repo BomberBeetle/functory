@@ -46,19 +46,22 @@ public class Application
 	}
 	
 	public static void instanceBindingCopies(Application a, List<Application> objectsInstanced){
+		
 		List<BindingOf> bindingList = new List<BindingOf>();
+		/*
 		if(objectsInstanced.Contains(a.originalApplication)){
-			GD.Print("Application: App for " +a.func.GetHashCode() + " skipped.");
+			GD.Print("Application: App for " +a.originalApplication.GetHashCode() + " skipped.");
 			return;
 		}
-		else if(a.func != null){
-			objectsInstanced.Add(a);
-			GD.Print("Application: App for " + a.func.GetHashCode() + " added to instance list.");
+		else if(a.originalApplication != null){
+			objectsInstanced.Add(a.originalApplication);
+			GD.Print("Application: App for " + a.originalApplication.GetHashCode() + " added to instance list.");
 		}
+		*/
 		if(a.func != null){
-			GD.Print("Application: Trying to instance binding copies for application with func =" + a.func);
+			GD.Print("Application: Trying to instance binding copies for application with func" + a.func.name);
 			Function fcopy = new Function();
-			if(a.func.def != null && !objectsInstanced.Contains(a.func.def.originalApplication)){
+			if(a.func.def != null ){
 				GD.Print("Application:  func def original hashcode is " + a.func.def.originalApplication.GetHashCode());
 				if(a.func.def is BindingOf){
 					BindingOf b = (BindingOf) a.func.def;
@@ -71,8 +74,11 @@ public class Application
 					fcopy.def = new Application(a.func.def.func, a.func.def.namedParams, a.func.def.positionalParams, false, a.func.def.originalApplication);
 				}
 				
-				instanceBindingCopies(fcopy.def, new List<Application>(objectsInstanced)); //Something devious draws near...
-				bindingList.AddRange(fcopy.def.getUnassignedBindings());
+				//instanceBindingCopies(fcopy.def, new List<Application>(objectsInstanced)); //Something devious draws near...
+				//bindingList.AddRange(fcopy.def.getUnassignedBindings());
+				
+			}
+			else{
 				
 			}
 			
@@ -82,7 +88,7 @@ public class Application
 		if(a.namedParams != null){
 			Dictionary<string, Application> nparams = new Dictionary<string, Application>();
 			foreach(string key in a.namedParams.Keys){
-				if(!objectsInstanced.Contains(a.namedParams[key].originalApplication)){
+				//if(!objectsInstanced.Contains(a.namedParams[key].originalApplication)){
 					Application newAp;
 					if(a.namedParams[key] is BindingOf){
 						BindingOf b = (BindingOf) a.namedParams[key];
@@ -96,9 +102,9 @@ public class Application
 					}
 					nparams.Add(key, newAp);
 					GD.Print("Application: newAp original hashcode is " + newAp.originalApplication.GetHashCode());
-					instanceBindingCopies(newAp, new List<Application>(objectsInstanced));
-					bindingList.AddRange(newAp.getUnassignedBindings());
-				} 
+					//instanceBindingCopies(newAp, new List<Application>(objectsInstanced));
+					//bindingList.AddRange(newAp.getUnassignedBindings());
+				//} 
 			}
 			a.namedParams = nparams;
 		}
@@ -110,7 +116,7 @@ public class Application
 			GD.Print("Application: now generating binding instances for pos params on " + a.GetHashCode());
 			Application[] posPrms = new Application[a.positionalParams.Length];
 			for(int i = 0; i < a.positionalParams.Length; i++){
-				if(!objectsInstanced.Contains(a.positionalParams[i].originalApplication)){
+				//if(!objectsInstanced.Contains(a.positionalParams[i].originalApplication)){
 					Application newAp;
 					if(a.positionalParams[i] is BindingOf){
 						BindingOf b = (BindingOf) a.positionalParams[i];
@@ -124,9 +130,9 @@ public class Application
 					}
 					posPrms[i] = newAp;
 					GD.Print("Application: newAp original hashcode is " + newAp.originalApplication.GetHashCode());
-					instanceBindingCopies(newAp, new List<Application>(objectsInstanced));
-					bindingList.AddRange(newAp.getUnassignedBindings());
-				}
+					//instanceBindingCopies(newAp, new List<Application>(objectsInstanced));
+					//bindingList.AddRange(newAp.getUnassignedBindings());
+				//}
 			}
 			a.positionalParams = posPrms;
 		}
@@ -140,12 +146,12 @@ public class Application
 	
 	public void updateNamedParams(Dictionary<string, Application> newParams, bool instanceCopies = true){
 		this.namedParams = newParams;
-		if(instanceCopies) instanceBindingCopies(this, new List<Application>());
+		//if(instanceCopies) instanceBindingCopies(this, new List<Application>());
 	}
 	
 	public  void updatePositionalParams(Application[] newParams, bool instanceCopies = true){
 		this.positionalParams = newParams;
-		if(instanceCopies) instanceBindingCopies(this, new List<Application>());
+		//if(instanceCopies) instanceBindingCopies(this, new List<Application>());
 	}
 
 	
