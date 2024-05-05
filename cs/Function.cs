@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 namespace Functory.Lang {
 	public class Function {
@@ -8,19 +9,20 @@ namespace Functory.Lang {
 			
 		}
 	
-		public Function(Application def, string[] parameters, string name="unnamedFunction"){
+		public Function(Expression def, string[] parameters, string name="unnamedFunction"){
 			this.parameters = parameters;
 			this.def = def;
 			this.name = name;
 		}
 	
-		
-	
 		public string[] parameters;
-		public Application def;
+		public Expression def;
 		public string name;
+
+
 	
-	
+	//WARNING: THIS IS DEPRECATED NOTES FROM AN EARLIER TIME
+	//STILL PROBABLY GONNA BE USEFUL BUT LIKE. BE CAREFUL WITH TAKING THIS AT FACE VALUE.
 	
 	//The definition of the function is always an application
 	//A renaming, for example, would be 

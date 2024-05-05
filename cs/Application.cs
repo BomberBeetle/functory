@@ -21,7 +21,6 @@ public class Application
 	
 	//An Application without any parameters resolves to it's func
 	//Partial application is also possible.
-	public List<BindingOf> bindings;
 	
 	// Corresponding GraphNode in the graph.
 	// Will be used in the interpreter for breakpoint/prog.eval 
@@ -30,39 +29,33 @@ public class Application
 	
 	
 		
-	public Application(Function func, Dictionary<string, Application> namedParams, Application[] positionalParams, bool instanceCopies = true, Application originalApplication=null){
+	public Application(Function func, Dictionary<string, Application> namedParams, Application[] positionalParams, bool instanceCopies = true){
 		
 		this.func = func;
 		this.namedParams = namedParams;
 		this.positionalParams = positionalParams;
-		this.bindings = new List<BindingOf>();
-		
-		
-		if(this.originalApplication == null){
-			this.originalApplication = this;
-		}
 		
 		if(instanceCopies) instanceBindingCopies(this, new List<Application>());
 	}
 	
 	public static void instanceBindingCopies(Application a, List<Application> objectsInstanced){
-		
+		/* 
 		List<BindingOf> bindingList = new List<BindingOf>();
-		/*
-		if(objectsInstanced.Contains(a.originalApplication)){
-			GD.Print("Application: App for " +a.originalApplication.GetHashCode() + " skipped.");
-			return;
-		}
-		else if(a.originalApplication != null){
-			objectsInstanced.Add(a.originalApplication);
-			GD.Print("Application: App for " + a.originalApplication.GetHashCode() + " added to instance list.");
-		}
-		*/
+	
+		//if(objectsInstanced.Contains(a.originalApplication)){
+		//	//GD.Print("Application: App for " +a.originalApplication.GetHashCode() + " skipped.");
+		//	return;
+		//}
+		//else if(a.originalApplication != null){
+		//	objectsInstanced.Add(a.originalApplication);
+		//	//GD.Print("Application: App for " + a.originalApplication.GetHashCode() + " added to instance list.");
+		//}
+		
 		if(a.func != null){
-			GD.Print("Application: Trying to instance binding copies for application with func" + a.func.name);
+			//GD.Print("Application: Trying to instance binding copies for application with func" + a.func.name);
 			Function fcopy = new Function();
 			if(a.func.def != null ){
-				GD.Print("Application:  func def original hashcode is " + a.func.def.originalApplication.GetHashCode());
+				//GD.Print("Application:  func def original hashcode is " + a.func.def.originalApplication.GetHashCode());
 				if(a.func.def is BindingOf){
 					BindingOf b = (BindingOf) a.func.def;
 					BindingOf newPrm =  new BindingOf(b.symbol, b.func, b.namedParams, b.positionalParams, false, a.func.def.originalApplication);
@@ -101,7 +94,7 @@ public class Application
 						newAp = new Application(oldAp.func, oldAp.namedParams, oldAp.positionalParams, false, a.namedParams[key].originalApplication);
 					}
 					nparams.Add(key, newAp);
-					GD.Print("Application: newAp original hashcode is " + newAp.originalApplication.GetHashCode());
+					//GD.Print("Application: newAp original hashcode is " + newAp.originalApplication.GetHashCode());
 					//instanceBindingCopies(newAp, new List<Application>(objectsInstanced));
 					//bindingList.AddRange(newAp.getUnassignedBindings());
 				//} 
@@ -109,11 +102,11 @@ public class Application
 			a.namedParams = nparams;
 		}
 		else {
-			//GD.Print("resolveParams: named params null");
+			////GD.Print("resolveParams: named params null");
 		}
 		
 		if(a.positionalParams != null){
-			GD.Print("Application: now generating binding instances for pos params on " + a.GetHashCode());
+			//GD.Print("Application: now generating binding instances for pos params on " + a.GetHashCode());
 			Application[] posPrms = new Application[a.positionalParams.Length];
 			for(int i = 0; i < a.positionalParams.Length; i++){
 				//if(!objectsInstanced.Contains(a.positionalParams[i].originalApplication)){
@@ -129,7 +122,7 @@ public class Application
 						newAp = new Application(oldAp.func, oldAp.namedParams, oldAp.positionalParams, false, a.positionalParams[i].originalApplication);
 					}
 					posPrms[i] = newAp;
-					GD.Print("Application: newAp original hashcode is " + newAp.originalApplication.GetHashCode());
+					//GD.Print("Application: newAp original hashcode is " + newAp.originalApplication.GetHashCode());
 					//instanceBindingCopies(newAp, new List<Application>(objectsInstanced));
 					//bindingList.AddRange(newAp.getUnassignedBindings());
 				//}
@@ -141,9 +134,10 @@ public class Application
 		}
 		
 		a.bindings = bindingList;
-		
+		*/
 	}
 	
+	/*
 	public void updateNamedParams(Dictionary<string, Application> newParams, bool instanceCopies = true){
 		this.namedParams = newParams;
 		//if(instanceCopies) instanceBindingCopies(this, new List<Application>());
@@ -213,6 +207,6 @@ public class Application
 		return unassignedBindings;
 	}
 	
-	
+	*/
 	}
 }

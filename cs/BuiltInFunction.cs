@@ -15,11 +15,13 @@ namespace Functory.Lang {
 		}
 		public override object eval(Dictionary<string, Application> parameters){
 			
-			GD.Print("BuiltIn:Sum : param a is " + parameters["a"]);
-			int a = (int) Interpreter.eval(parameters["a"]);
+			////GD.Print("BuiltIn:Sum : param a is " + parameters["a"]);
+			int a = (int) Interpreter.evalTwo(parameters["a"]);
 			
-			int b = (int) Interpreter.eval(parameters["b"]);
+			int b = (int) Interpreter.evalTwo(parameters["b"]);
+			
 			return (a + b);
+			
 		}
 	}
 	
@@ -60,12 +62,12 @@ namespace Functory.Lang {
 		}
 		
 		public override object eval(Dictionary<string, Application> parameters){
-			bool condition = (bool) Interpreter.eval(parameters["condition"]);
+			bool condition = (bool) Interpreter.evalTwo(parameters["condition"]);
 			if(condition){
-				return Interpreter.eval(parameters["then"]);
+				return Interpreter.evalTwo(parameters["then"]);
 			}
 			else{
-				return Interpreter.eval(parameters["else"]);
+				return Interpreter.evalTwo(parameters["else"]);
 			}
 		}
 	}
@@ -78,8 +80,8 @@ namespace Functory.Lang {
 		}
 		
 		public override object eval(Dictionary<string, Application> parameters){
-			object a = Interpreter.eval(parameters["a"]);
-			object b = Interpreter.eval(parameters["b"]);
+			object a = Interpreter.evalTwo(parameters["a"]);
+			object b = Interpreter.evalTwo(parameters["b"]);
 			return Object.Equals(a, b);
 		}
 	}
@@ -91,7 +93,7 @@ namespace Functory.Lang {
 			this.name = "Not";
 		}
 		public override object eval(Dictionary<string, Application> parameters){
-			bool booly = (bool) Interpreter.eval(parameters["x"]);
+			bool booly = (bool) Interpreter.evalTwo(parameters["x"]);
 			return !booly;
 		}
 	}
