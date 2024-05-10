@@ -87,7 +87,7 @@ public class Interpreter
 
 
 
-    /*
+	/*
 	public static Tuple<Dictionary<string, Application>, int> resolveBindings(Application a, Dictionary<string, Application> namedStacked, Application[] positionalStacked){ //returns number of positional bindings resolved
 		int positionalsUsed = 0;
 		Dictionary<string, Application> unusedNamedParams = new Dictionary<string,Application>();

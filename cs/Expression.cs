@@ -24,7 +24,8 @@ namespace Functory{
                 }
 
                 for(int i = 0; i < this.positionalParams.Length; i++){
-                    appPosParams.Add(this.positionalParams[i].expand(boundParams));
+                    Application expApp = this.positionalParams[i].expand(boundParams);
+                    if(expApp != null) appPosParams.Add(expApp);
                 }
 
                 returnApp.positionalParams = appPosParams.ToArray();
@@ -34,7 +35,8 @@ namespace Functory{
                 Dictionary<string, Application> appNamedParams = returnApp.namedParams!=null?returnApp.namedParams:(new Dictionary<string, Application>());       
 
                 foreach(string key in this.namedParams.Keys){
-                    appNamedParams.Add(key, this.namedParams[key].expand(boundParams));
+                    Application expApp = this.namedParams[key].expand(boundParams);
+                    if(expApp != null) appNamedParams.Add(key, expApp);
                 }
                 
                 returnApp.namedParams = appNamedParams;

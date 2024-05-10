@@ -32,7 +32,17 @@ public partial class root : Control
 		Application rebindApp = new Application(rebind, null, new Application[]{sdefApp, two, three});
 		
 		GD.Print(Interpreter.evalTwo(rebindApp));
-		
+
+		Function partiallyAppliedBonanza = new Function(new Functory.Expression(new Functory.Expression(rebind, new Functory.Expression[]{
+			new(sumRebind, null, null),
+			new(new IntegerConstructor(2), null, null)
+		},null),new Functory.Expression[]{new BindingOf("a")},null), new string[]{"a"});
+
+		Dictionary<string, Application> shenaniganParams = new Dictionary<string, Application>();
+		shenaniganParams.Add("a", three);
+		Application shenanigans = new Application(partiallyAppliedBonanza, shenaniganParams, null);
+
+		GD.Print(Interpreter.evalTwo(shenanigans));
 		
 		
 		/*
