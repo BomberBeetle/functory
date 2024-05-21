@@ -2,6 +2,7 @@ using Godot;
 using System;
 using Functory.Lang;
 using System.Collections.Generic;
+using System.Linq;
 
 public partial class root : Control
 {
@@ -135,11 +136,39 @@ public partial class root : Control
 		Application recurseApp = new Application(recurse, null, new Application[]{if_test});
 		////GD.Print("root: recursive eval result is " + Interpreter.eval(recurseApp));
 		*/
+		foreach(Node n in GetTree().GetNodesInGroup("Editors")){
+			GraphEdit graph = (GraphEdit) n;
+			graph.ConnectionRequest += (StringName from_node, long from_port, StringName to_node, long to_port) => OnGraphConnectionRequest(from_node, (int)from_port, to_node, (int)to_port, graph); 
+			graph.DisconnectionRequest += (StringName from_node, long from_port, StringName to_node, long to_port) => OnGraphDisconnectRequest(from_node, (int)from_port, to_node, (int)to_port, graph);
+		}
+		//TODO: Fazer a função de adicionar/remover parâmetros em lambdas.
+		//TODO: Permitir que funções sejam adicionadas da barra lateral.
+		//TODO: Adicionar alguma notação para campos de métodos construtores, lembrando que isso vai cair no construtor da classe.
+		//TODO: Fazer registro global de funções para a barra lateral.
+		//TODO: Permitir a remoção de funções do grafo.
+
+		//TODO: Toda a compilação. lol
+			
 	}
 	
+	public void OnGraphConnectionRequest(StringName from_node, int from_port, StringName to_node, int to_port, GraphEdit graph)
+	{
+		var connections = graph.GetConnectionList();
+		bool alreadyConnected = connections.Any((Godot.Collections.Dictionary conn) => {return conn["to_port"].As<int>()==to_port && conn["to_node"].As<StringName>()==to_node;});
+
+
+		if(!alreadyConnected) graph.ConnectNode(from_node, from_port, to_node, to_port);
+	}
+
+	public void OnGraphDisconnectRequest(StringName from_node, int from_port, StringName to_node, int to_port, GraphEdit graph){
+		graph.DisconnectNode(from_node, from_port, to_node, to_port);
+	}
 	
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
 	}
 }
+
+
+
