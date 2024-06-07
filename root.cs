@@ -5,16 +5,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Dynamic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 public partial class root : Control
 {
 	HashSet<GraphNode> selectedNodes = new HashSet<GraphNode>();
+
+	HashSet<ulong> rejectDeletionNodes = new HashSet<ulong>();
 	Dictionary<ulong, Function> componentMap = new Dictionary<ulong, Function>();
+	Dictionary<ulong, Function> fnInstanceMap = new Dictionary<ulong, Function>();
 	GraphEdit activeGraph;
+
+	PackedScene lambdaTemplate;
+	PackedScene lambdaParamTemplate;
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{	
 		
+		lambdaTemplate = GD.Load<PackedScene>("res://LambdaNode.tscn");
+		lambdaParamTemplate = GD.Load<PackedScene>("res://LambdaParam.tscn");
+
 		Application two = new Application(new IntegerConstructor(2), null, null);
 		Application three = new Application(new IntegerConstructor(3), null, null);
 		
@@ -84,15 +94,15 @@ public partial class root : Control
 		if(graphs.Count != 0){
 			activeGraph = (GraphEdit) graphs[0];
 		}
+
+
+		Button lambdaButton = (Button) GetNode("HSplitContainer/VBoxContainer2/Button");
+
+		lambdaButton.ButtonDown += CreateLambda;
+
 		foreach(Node n in graphs){
 			GraphEdit graph = (GraphEdit) n;
-			graph.ConnectionRequest += (StringName from_node, long from_port, StringName to_node, long to_port) => OnGraphConnectionRequest(from_node, (int)from_port, to_node, (int)to_port, graph); 
-			graph.DisconnectionRequest += (StringName from_node, long from_port, StringName to_node, long to_port) => OnGraphDisconnectRequest(from_node, (int)from_port, to_node, (int)to_port, graph);
-			graph.NodeSelected += (Node node) => OnNodeSelected((GraphNode) node);
-			graph.NodeDeselected += (Node node) => OnNodeUnselected((GraphNode) node);
-			graph.DeleteNodesRequest += (Godot.Collections.Array nodes) => OnDeleteNodesRequest(graph);
-			graph.GuiInput += (InputEvent evt) => OnGraphGuiInput(evt, graph);
-			
+			SetupEditorSignals(graph);
 		}
 
 		FunctionPackage mathPackage = new FunctionPackage("Matemática", "math");
@@ -129,12 +139,14 @@ public partial class root : Control
 				if(btFn != null){
 
 					Type fnType = fn.GetType();
-					foreach(FieldInfo field in fnType.GetFields()){
-						GD.Print("evaling property");
+					BuiltInFunction btFnReplica = (BuiltInFunction) System.Activator.CreateInstance(fnType);
+					fn = btFnReplica;
+;					foreach(FieldInfo field in fnType.GetFields()){
 						if(Attribute.IsDefined(field, typeof(ConstructorField))){
 							LineEdit propertyEditor = new LineEdit();
+							propertyEditor.Text = field.GetValue(btFnReplica).ToString();
 							propertyEditor.TextChanged += (string text) => {
-								bool accept = btFn.UpdateConstructorField(field, text);
+								bool accept = btFnReplica.UpdateConstructorField(field, text);
 								if(accept){
 									GD.Print("Property " + field.Name + " of " + fn + "changed to " + text);
 									propertyEditor.RemoveThemeColorOverride("font_color");
@@ -149,7 +161,7 @@ public partial class root : Control
 					}
 				}
 				else{
-					GD.Print("not a builtin ");
+					//TODO: Make replica of non-builtin functions
 				}
 
 				int paramsOffset = 0;
@@ -175,10 +187,8 @@ public partial class root : Control
 					funNode.SetSlotEnabledRight(0, true);
 				}
 				
-
+				fnInstanceMap.Add(funNode.GetInstanceId(), fn);
 				activeGraph.AddChild(funNode);
-
-				
 
 				GD.Print("Added function " + fn + " to " + activeGraph.GetPath());
 
@@ -190,16 +200,141 @@ public partial class root : Control
 		logicPackage.CreateTree(functionsTree, treeRoot, componentMap);
 
 		//LAMBDAS
-		//TODO: Fazer a função de adicionar/remover parâmetros em lambdas.
-		//TODO: Fazer com que Nodes de parâmetro deletem seu parâmetro correspondente.
-		
-		//CRIAÇÃO DE NÓS
-		//TODO: Fazer a função de adicionar funções criar novas instâncias em vez de usar a mesma (pra não bugar construtores)
-
-		
+		//TODO: Des-fod** a questão de passar parâmetros posicionais pra parâmetros (é argumentável que não tá fud****)
 
 		//TODO: Toda a interpretação. lol
 			
+	}
+
+	public void SetupEditorSignals(GraphEdit graph){
+		graph.ConnectionRequest += (StringName from_node, long from_port, StringName to_node, long to_port) => OnGraphConnectionRequest(from_node, (int)from_port, to_node, (int)to_port, graph); 
+		graph.DisconnectionRequest += (StringName from_node, long from_port, StringName to_node, long to_port) => OnGraphDisconnectRequest(from_node, (int)from_port, to_node, (int)to_port, graph);
+		graph.NodeSelected += (Node node) => OnNodeSelected((GraphNode) node);
+		graph.NodeDeselected += (Node node) => OnNodeUnselected((GraphNode) node);
+		graph.DeleteNodesRequest += (Godot.Collections.Array nodes) => OnDeleteNodesRequest(graph);
+		graph.GuiInput += (InputEvent evt) => OnGraphGuiInput(evt, graph);
+	}
+	public void CreateLambda(){
+		GraphNode lambdaNode = (GraphNode) lambdaTemplate.Instantiate();
+		activeGraph.AddChild(lambdaNode);
+		Function lnFunc = new Function();
+		lnFunc.name = "Lambda";
+		fnInstanceMap.Add(lambdaNode.GetInstanceId(),  lnFunc);
+		GraphEdit lambdaEditor = (GraphEdit) lambdaNode.GetNode("GraphEdit");
+		SetupEditorSignals(lambdaEditor);
+		Button addParamButton = lambdaNode.GetNode<Button>("AddParamButton");
+		LineEdit titleEdit = null;
+
+		HashSet<GraphNode> paramNodes = new HashSet<GraphNode>();
+		
+		lambdaNode.GuiInput += (InputEvent evt) => {
+			if(evt is InputEventMouseButton eventMouse){
+				if(eventMouse.DoubleClick){
+					titleEdit = new LineEdit();
+					titleEdit.Text = lnFunc.name;
+					titleEdit.SetSize(new Vector2(200, titleEdit.Size.Y));
+					titleEdit.SetPosition(new Vector2(lambdaNode.Position.X, lambdaNode.Position.Y-50));
+
+					titleEdit.TextChanged += (String text) => {
+						lnFunc.name = text;
+						lambdaNode.Title = text;
+					};
+					lambdaNode.AddSibling(titleEdit);
+				}
+			}
+		};
+
+		lambdaNode.NodeDeselected += () => {
+			if(titleEdit != null){
+				titleEdit.QueueFree();
+				titleEdit = null;
+			}
+		};
+
+		lambdaEditor.ConnectionRequest += (StringName from_n, long from_p, StringName to_n, long to_p) => {
+			var connections = lambdaEditor.GetConnectionList();
+			GraphNode recv_node = (GraphNode) lambdaEditor.GetNode(new NodePath(to_n.ToString()));
+			if(paramNodes.Contains(recv_node)){
+				Label lblTest = new Label();
+				lblTest.Text = "";
+				recv_node.AddChild(lblTest);
+				recv_node.SetSlotEnabledLeft(recv_node.GetChildCount()-1, true);
+			}
+		};
+
+		Godot.GraphEdit.DisconnectionRequestEventHandler handleDisconnectLambda = (StringName from_n, long from_p, StringName to_n, long to_p) => {
+			var connections = lambdaEditor.GetConnectionList();
+			GraphNode recv_node = (GraphNode) lambdaEditor.GetNode(to_n.ToString());
+			if(paramNodes.Contains(recv_node) && recv_node.GetChildCount() != 1){
+				Node theDeleterrrrr = recv_node.GetChild((int) to_p);
+				recv_node.RemoveChild(theDeleterrrrr);
+				GD.Print("ParamNode children: " + recv_node.GetChildCount());
+				theDeleterrrrr.QueueFree();
+			}
+		};
+		lambdaEditor.DisconnectionRequest += handleDisconnectLambda;
+
+		addParamButton.Pressed += () =>{
+
+			string[] newParams = new string[lnFunc.parameters.Length+1];
+			Array.Copy(lnFunc.parameters, newParams, lnFunc.parameters.Length);
+			newParams[lnFunc.parameters.Length] = "param" + lnFunc.parameters.Length;
+			GD.Print("Newparams length: " + newParams.Length);
+
+			LineEdit lbdaParam = lambdaParamTemplate.Instantiate<LineEdit>();
+
+
+			lbdaParam.Text = newParams[lnFunc.parameters.Length];
+			lambdaNode.AddChild(lbdaParam);
+			lambdaNode.MoveChild(lbdaParam, -2);
+			lambdaNode.SetSlotEnabledLeft(newParams.Length+1, true); //Enables the slot at the index of the last param+2, to account for the GraphEdit and label
+
+
+			GraphNode paramNode = new GraphNode();
+			paramNode.Title = newParams[lnFunc.parameters.Length];
+			paramNode.AddChild(new Control());
+			paramNode.SetSlotEnabledLeft(0, true);
+			paramNode.SetSlotEnabledRight(0, true);
+
+			lbdaParam.TextChanged += (string text) => {
+				int paramIdx = lbdaParam.GetIndex() - 2; //evil and bad copy paste
+				lnFunc.parameters[paramIdx] = text;
+				paramNode.Title = text;
+			};
+
+			paramNodes.Add(paramNode);
+			rejectDeletionNodes.Add(paramNode.GetInstanceId()); //marks the node as un-deletable by user
+			lambdaEditor.AddChild(paramNode);
+
+			Button deleteParamButton = lbdaParam.GetNode<Button>("Button");
+
+			deleteParamButton.Pressed += () => {
+
+				string[] afterRemoveParams = new string[lnFunc.parameters.Length-1];
+				int paramIdx = lbdaParam.GetIndex() - 2; //this is evil and bad. dont care
+				if( paramIdx > 0 ) Array.Copy(lnFunc.parameters, 0, afterRemoveParams, 0, paramIdx);
+				if( paramIdx < lnFunc.parameters.Length - 1 ) Array.Copy(lnFunc.parameters, paramIdx+1, afterRemoveParams, paramIdx, lnFunc.parameters.Length - paramIdx - 1);
+				lnFunc.parameters = afterRemoveParams;
+
+				lambdaNode.RemoveChild(lbdaParam);
+				Godot.Collections.Array<Godot.Collections.Dictionary> connections = lambdaEditor.GetConnectionList();
+				foreach(Godot.Collections.Dictionary d in connections){
+					if(lambdaEditor.GetNode(d["to_node"].As<StringName>().ToString()) == paramNode || lambdaEditor.GetNode(d["from_node"].As<StringName>().ToString()) == paramNode){
+						handleDisconnectLambda(d["from_node"].As<StringName>(),
+							 d["from_port"].As<int>(),
+							 d["to_node"].As<StringName>(),
+							 d["to_port"].As<int>());
+					}
+				}
+				lambdaEditor.RemoveChild(paramNode);
+				paramNode.QueueFree();
+				lambdaNode.SetSlotEnabledLeft(lambdaNode.GetChildCount()-1, false);
+			};
+
+			lnFunc.parameters = newParams;
+		};
+
+		
 	}
 	
 	public void OnGraphConnectionRequest(StringName from_node, int from_port, StringName to_node, int to_port, GraphEdit graph)
@@ -222,7 +357,9 @@ public partial class root : Control
 	public void OnDeleteNodesRequest(GraphEdit graph){
 		List<GraphNode> containedNodes = new List<GraphNode>();
 		foreach(GraphNode n in selectedNodes){
-			if(graph.GetChildren().Contains(n)){
+
+
+			if(graph.GetChildren().Contains(n) && !rejectDeletionNodes.Contains(n.GetInstanceId())){
 				
 				foreach(Godot.Collections.Dictionary con in graph.GetConnectionList()){
 					StringName to_node = con["to"].As<StringName>();
@@ -235,9 +372,13 @@ public partial class root : Control
 
 					selectedNodes.Remove(n);
 				}
+				if(fnInstanceMap.ContainsKey(n.GetInstanceId())){
+					fnInstanceMap.Remove(n.GetInstanceId());
+				}
+				n.QueueFree();
+				containedNodes.Add(n);	
 			}
-			n.QueueFree();
-			containedNodes.Add(n);
+			
 		}
 		selectedNodes.RemoveWhere((GraphNode n) => containedNodes.Contains(n));
 	}
@@ -261,6 +402,3 @@ public partial class root : Control
 	{
 	}
 }
-
-
-

@@ -1,17 +1,16 @@
-[gd_scene load_steps=3 format=3 uid="uid://dmpcp537m8nya"]
+[gd_scene load_steps=2 format=3 uid="uid://dmpcp537m8nya"]
 
 [ext_resource type="Script" path="res://root.cs" id="1_75k10"]
-[ext_resource type="PackedScene" uid="uid://ejbwqoq7w4ku" path="res://LambdaNode.tscn" id="2_33skb"]
 
 [node name="Root" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 128.0
-offset_bottom = 72.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_75k10")
 
 [node name="HSplitContainer" type="HSplitContainer" parent="."]
@@ -97,84 +96,6 @@ minimap_size = Vector2(200, 150)
 show_zoom_label = true
 show_grid_buttons = false
 
-[node name="Builtin_ImportNode" type="GraphNode" parent="HSplitContainer/VBoxContainer/GraphEdit" groups=["Dummy"]]
-layout_mode = 0
-offset_left = 95.0
-offset_top = 246.0
-offset_right = 219.0
-offset_bottom = 374.0
-mouse_filter = 1
-position_offset = Vector2(95, 246)
-title = "Built-in/Import"
-slot/0/left_enabled = true
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = true
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-slot/1/left_enabled = true
-slot/1/left_type = 0
-slot/1/left_color = Color(1, 1, 1, 1)
-slot/1/left_icon = null
-slot/1/right_enabled = false
-slot/1/right_type = 0
-slot/1/right_color = Color(1, 1, 1, 1)
-slot/1/right_icon = null
-slot/1/draw_stylebox = true
-slot/2/left_enabled = true
-slot/2/left_type = 0
-slot/2/left_color = Color(1, 1, 1, 1)
-slot/2/left_icon = null
-slot/2/right_enabled = false
-slot/2/right_type = 0
-slot/2/right_color = Color(1, 1, 1, 1)
-slot/2/right_icon = null
-slot/2/draw_stylebox = true
-
-[node name="Label" type="Label" parent="HSplitContainer/VBoxContainer/GraphEdit/Builtin_ImportNode"]
-layout_mode = 2
-text = "param1
-"
-
-[node name="Label2" type="Label" parent="HSplitContainer/VBoxContainer/GraphEdit/Builtin_ImportNode"]
-layout_mode = 2
-text = "param2
-"
-
-[node name="Label3" type="Label" parent="HSplitContainer/VBoxContainer/GraphEdit/Builtin_ImportNode"]
-layout_mode = 2
-text = "param3
-"
-
-[node name="LambdaNode" parent="HSplitContainer/VBoxContainer/GraphEdit" groups=["Dummy"] instance=ExtResource("2_33skb")]
-layout_mode = 0
-
-[node name="ConsNode" type="GraphNode" parent="HSplitContainer/VBoxContainer/GraphEdit" groups=["Dummy"]]
-layout_mode = 0
-offset_left = 80.0
-offset_top = 115.0
-offset_right = 221.0
-offset_bottom = 201.0
-mouse_filter = 1
-position_offset = Vector2(80, 115)
-title = "Inteiro"
-slot/0/left_enabled = false
-slot/0/left_type = 0
-slot/0/left_color = Color(1, 1, 1, 1)
-slot/0/left_icon = null
-slot/0/right_enabled = true
-slot/0/right_type = 0
-slot/0/right_color = Color(1, 1, 1, 1)
-slot/0/right_icon = null
-slot/0/draw_stylebox = true
-
-[node name="LineEdit" type="LineEdit" parent="HSplitContainer/VBoxContainer/GraphEdit/ConsNode"]
-layout_mode = 2
-text = "413"
-
 [node name="VBoxContainer2" type="VBoxContainer" parent="HSplitContainer"]
 layout_mode = 2
 
@@ -189,3 +110,7 @@ size_flags_vertical = 3
 hide_root = true
 scroll_horizontal_enabled = false
 scroll_vertical_enabled = false
+
+[node name="Button" type="Button" parent="HSplitContainer/VBoxContainer2"]
+layout_mode = 2
+text = "+ Lambda"

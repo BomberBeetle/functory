@@ -6,7 +6,9 @@ namespace Functory.Lang {
 	public class Function {
 	
 		public Function(){
-			
+			this.parameters = new string[0];
+			this.def = null;
+			this.name = "unnamedFunction";
 		}
 	
 		public Function(Expression def, string[] parameters, string name="unnamedFunction"){
