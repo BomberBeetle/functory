@@ -103,7 +103,20 @@ layout_mode = 2
 layout_mode = 2
 text = "Funções"
 
-[node name="Tree" type="Tree" parent="HSplitContainer/VBoxContainer2"]
+[node name="TabContainer" type="TabContainer" parent="HSplitContainer/VBoxContainer2"]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Padrão" type="Tree" parent="HSplitContainer/VBoxContainer2/TabContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+scroll_horizontal_enabled = false
+scroll_vertical_enabled = false
+
+[node name="Projeto" type="Tree" parent="HSplitContainer/VBoxContainer2/TabContainer"]
+visible = false
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_vertical = 3
@@ -113,4 +126,4 @@ scroll_vertical_enabled = false
 
 [node name="Button" type="Button" parent="HSplitContainer/VBoxContainer2"]
 layout_mode = 2
-text = "+ Lambda"
+text = "Nova Função"

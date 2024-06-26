@@ -9,19 +9,27 @@ namespace Functory.Lang {
 			this.parameters = new string[0];
 			this.def = null;
 			this.name = "unnamedFunction";
+			this.dependentNodes = new List<GraphNode>();
+			this.interpretationInProgress = false;
 		}
 	
 		public Function(Expression def, string[] parameters, string name="unnamedFunction"){
 			this.parameters = parameters;
 			this.def = def;
 			this.name = name;
+			this.dependentNodes = new List<GraphNode>();
+			this.interpretationInProgress = false;
 		}
 	
 		public string[] parameters;
 		public Expression def;
 		public string name;
 
+		public GraphNode defNode;
 
+		public List<GraphNode> dependentNodes;
+
+		public bool interpretationInProgress;
 	
 	//WARNING: THIS IS DEPRECATED NOTES FROM AN EARLIER TIME
 	//STILL PROBABLY GONNA BE USEFUL BUT LIKE. BE CAREFUL WITH TAKING THIS AT FACE VALUE.

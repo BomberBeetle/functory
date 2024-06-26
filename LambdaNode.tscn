@@ -1,6 +1,18 @@
-[gd_scene format=3 uid="uid://ejbwqoq7w4ku"]
+[gd_scene load_steps=3 format=3 uid="uid://ejbwqoq7w4ku"]
 
-[node name="LambdaNode" type="GraphNode"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_utje6"]
+bg_color = Color(1, 0.917647, 0.0313726, 0.337255)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 5
+expand_margin_left = 3.0
+expand_margin_right = 3.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8o0ce"]
+bg_color = Color(1, 0.85098, 0, 0.65098)
+
+[node name="LambdaNode" type="GraphNode" groups=["Lambda"]]
 offset_left = 332.0
 offset_top = 61.0
 offset_right = 993.0
@@ -55,6 +67,30 @@ show_zoom_buttons = false
 show_grid_buttons = false
 show_minimap_button = false
 show_arrange_button = false
+
+[node name="OutputNode" type="GraphNode" parent="GraphEdit" groups=["LambdaOutputNode"]]
+layout_mode = 0
+offset_left = 529.0
+offset_top = 180.0
+offset_right = 579.0
+offset_bottom = 235.0
+mouse_filter = 1
+theme_override_styles/titlebar = SubResource("StyleBoxFlat_utje6")
+theme_override_styles/titlebar_selected = SubResource("StyleBoxFlat_8o0ce")
+position_offset = Vector2(529, 180)
+title = "Saída"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Control" type="Control" parent="GraphEdit/OutputNode"]
+layout_mode = 2
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 2

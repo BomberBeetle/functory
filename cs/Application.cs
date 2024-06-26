@@ -25,7 +25,6 @@ public class Application
 	// Corresponding GraphNode in the graph.
 	// Will be used in the interpreter for breakpoint/prog.eval 
 	// Just do a GetParent on this sucker to get the needed GraphEdit
-	public GraphNode node;
 	
 	
 		
