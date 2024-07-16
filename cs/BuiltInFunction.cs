@@ -9,6 +9,7 @@ namespace Functory.Lang {
 	}
 	public abstract class BuiltInFunction : Function
 		{
+			public abstract object evalProgressive(Dictionary<string, Application> boundParams);
 			public abstract object eval(Dictionary<string, Application> parameters);
 			public virtual bool UpdateConstructorField(FieldInfo field, string text){
 				return false;
@@ -30,6 +31,28 @@ namespace Functory.Lang {
 			
 			return (a + b);
 			
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+
+			else{
+				return (int) boundParams["a"].result + (int) boundParams["b"].result;
+			}
+
+
+			/*
+			yield return new ParamEvaluationRequest("a");
+			int a = (int) parameter;
+			yield return new ParamEvaluationRequest("b");
+			int b = (int) parameter;
+			yield return a+b;*/
 		}
 	}
 	
@@ -61,6 +84,10 @@ namespace Functory.Lang {
 		}
 	
 		public override object eval(Dictionary<string, Application> parameters){
+			return this.value;
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
 			return this.value;
 		}
 	
@@ -95,6 +122,11 @@ namespace Functory.Lang {
 		public override object eval(Dictionary<string, Application> parameters){
 			return this.value;
 		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			return this.value;
+		}
+	
 	}
 	
 	public class If : BuiltInFunction {
@@ -113,6 +145,29 @@ namespace Functory.Lang {
 				return Interpreter.evalTwo(parameters["senao"]);
 			}
 		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			
+			if(!boundParams.ContainsKey("condicao")){
+				return new ParamEvaluationRequest("condicao");
+			}
+			else{
+				if((bool) boundParams["condicao"].result){
+					if(boundParams.ContainsKey("entao")){
+						return boundParams["entao"].result;
+					}
+					else return new ParamEvaluationRequest("entao");
+					
+				}
+				else{
+					if(boundParams.ContainsKey("senao")){
+						return boundParams["senao"].result;
+					}	
+					else return new ParamEvaluationRequest("senao");
+				}
+			}
+		}
+	
 	}
 	
 	public class Equals : BuiltInFunction {
@@ -127,6 +182,18 @@ namespace Functory.Lang {
 			object b = Interpreter.evalTwo(parameters["b"]);
 			return Object.Equals(a, b);
 		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+			else {
+				return Object.Equals(boundParams["a"].result, boundParams["b"].result);
+			}
+		}
 	}
 	
 	public class Not : BuiltInFunction {
@@ -138,6 +205,15 @@ namespace Functory.Lang {
 		public override object eval(Dictionary<string, Application> parameters){
 			bool booly = (bool) Interpreter.evalTwo(parameters["x"]);
 			return !booly;
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("x")){
+				return new ParamEvaluationRequest("x");
+			}
+			else{
+				return !(bool)boundParams["x"].result;
+			}
 		}
 	}
 }

@@ -4,6 +4,8 @@ using Functory.Lang;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Functory;
+using System.Transactions;
 
 
 public partial class root : Control
@@ -41,7 +43,7 @@ public partial class root : Control
 		
 		Application sdefApp = new Application(sumRebind, null, null);
 		
-		GD.Print(Interpreter.evalTwo(sdefApp));
+		//GD.Print(Interpreter.evalTwo(sdefApp));
 		
 		string[] parameters = new string[] {"f", "a", "b"};
 		Function rebind = new Function(null, parameters, "rebind");
@@ -51,7 +53,7 @@ public partial class root : Control
 		 
 		Application rebindApp = new Application(rebind, null, new Application[]{sdefApp, two, three});
 		
-		GD.Print(Interpreter.evalTwo(rebindApp));
+		//GD.Print(Interpreter.evalTwo(rebindApp));
 
 		Function partiallyAppliedBonanza = new Function(new Functory.Expression(new Functory.Expression(rebind, new Functory.Expression[]{
 			new(sumRebind, null, null),
@@ -62,7 +64,9 @@ public partial class root : Control
 		shenaniganParams.Add("a", three);
 		Application shenanigans = new Application(partiallyAppliedBonanza, shenaniganParams, null);
 
-		GD.Print(Interpreter.evalTwo(shenanigans));
+		//GD.Print(Interpreter.evalTwo(shenanigans));
+
+		
 		
 		
 		/*
@@ -91,8 +95,27 @@ public partial class root : Control
 				} ,null)
 			}, null)
 		}, null);
+
+		ExecutionFrame rootFrameTest = new ExecutionFrame(new Application(recurse, null, new Application[]{new Application(new IntegerConstructor(50), null, null)}));
+		Interpreter ip = new Interpreter();
+		ip.currentFrame = rootFrameTest;
+		object evalResult = null;
+		GD.Print("Starting progressive eval test");
+		//GD.Print("Root frame: " + rootFrameTest);
+		evalResult = ip.EvalStep();
+		//GD.Print(evalResult);
+		int iters = 1000000;
+		while(evalResult is ExecutionFrame && iters > 0){
+			evalResult = ip.EvalStep();
+			//GD.Print("\n\n" + evalResult);
+			iters--;
+		}
+		if(iters == 0){
+			GD.Print("Progressive eval exceeded iteration limit of " + iters + ", exiting early.");
+		}
+		GD.Print("Progressive eval result is " + evalResult);
 		
-		GD.Print(Interpreter.evalTwo(new Application(recurse, null, new Application[]{new Application(new IntegerConstructor(500), null, null)})));
+		//GD.Print(Interpreter.evalTwo(new Application(recurse, null, new Application[]{new Application(new IntegerConstructor(500), null, null)})));
 
 		Godot.Collections.Array<Godot.Node> graphs = GetTree().GetNodesInGroup("Editors");
 		if(graphs.Count != 0){
@@ -159,6 +182,7 @@ public partial class root : Control
 					Type fnType = fn.GetType();
 					BuiltInFunction btFnReplica = (BuiltInFunction) System.Activator.CreateInstance(fnType);
 					fn = btFnReplica;
+					btFnReplica.defNode = funNode;
 ;					foreach(FieldInfo field in fnType.GetFields()){
 						if(Attribute.IsDefined(field, typeof(ConstructorField))){
 							LineEdit propertyEditor = new LineEdit();
@@ -583,10 +607,6 @@ public partial class root : Control
 				activeGraph = graph;
 			}
 		}
-	}
-
-	public void AddFnFromTree(){
-
 	}
 
 	public void FFWDRun() {

@@ -7,6 +7,142 @@ namespace Functory.Lang{
 
 public class Interpreter
 {
+	public ExecutionFrame currentFrame;
+
+	public object EvalStep(){
+		if(currentFrame.application.result != null){
+			//GD.Print("currentFrame result not null; passing to parent or returning");
+			if(currentFrame.parent != null){
+				currentFrame.parent.valueReceived = currentFrame.application.result;
+				currentFrame = currentFrame.parent;
+				return currentFrame;
+			}
+			else{
+			return currentFrame.application.result;
+			}
+		}
+		
+		if(currentFrame.application.func is BuiltInFunction bfct){
+			//GD.Print("currentFrame app is BuiltIn;");
+			var fulfillableParams = (currentFrame.application.namedParams!=null?currentFrame.application.func.parameters.Count((par)=>currentFrame.application.namedParams.ContainsKey(par)):0) + (currentFrame.application.positionalParams!=null?currentFrame.application.positionalParams.Length:0);
+			if(fulfillableParams >= currentFrame.application.func.parameters.Length){
+				object res = null;
+
+				res = bfct.evalProgressive(currentFrame.boundParams);
+
+				if(res is ParamEvaluationRequest request){
+					Application a = null;
+					//GD.Print("builtin returned evaluation request for symbol " + request.ParamName);
+
+					if(currentFrame.matchedParams.ContainsKey(request.ParamName)){
+						a = currentFrame.matchedParams[request.ParamName];
+						currentFrame.boundParams.Add(request.ParamName, a);
+					}
+
+					else{
+						throw new Exception("Could not find appropriate parameter for ParamEvalRequest in matchedParams");
+					}
+
+					ExecutionFrame exFr = new ExecutionFrame(a, currentFrame);
+					currentFrame = exFr;
+					return exFr;
+				}
+				else{
+					//GD.Print("builtin returned result: " + res);
+					if(currentFrame.parent != null){
+						currentFrame.parent.valueReceived = res;
+						currentFrame.application.result = res;
+						currentFrame = currentFrame.parent;
+						return currentFrame;
+					}
+					else{
+						return res;
+					}
+				}
+
+			}
+			else{
+				if(currentFrame.parent != null){
+					currentFrame.parent.valueReceived = currentFrame.application;
+					currentFrame.application.result = currentFrame.application;
+					currentFrame = currentFrame.parent;
+					return currentFrame;
+				}
+				else{
+					return currentFrame.application;
+				}
+			}
+		}
+
+		if(currentFrame.valueReceived != null){
+			if(currentFrame.lastParamChild != null){ //Receiving from param
+				//GD.Print("Frame receiving value from param " + currentFrame.lastParamSymbol);
+				currentFrame.boundParams.Add(currentFrame.lastParamSymbol, currentFrame.lastParamChild.application);
+				currentFrame.lastParamChild = null;
+				currentFrame.lastParamSymbol = null;
+				currentFrame.valueReceived = null;
+			}
+			else if(currentFrame.parent != null) { //Receiving from def
+				//GD.Print("Frame receiving value from def, passing to parent");
+				currentFrame.application.result = currentFrame.valueReceived;
+				currentFrame.parent.valueReceived = currentFrame.valueReceived;
+				currentFrame.valueReceived = null;
+				currentFrame = currentFrame.parent;
+				return currentFrame;
+			}
+			else{
+				//GD.Print("Frame receiving value from def, returning");
+				object value = currentFrame. valueReceived;
+				currentFrame.valueReceived = null;
+				return value;
+			}
+		}
+
+		if(currentFrame.application.func.parameters.All((prm) => currentFrame.boundParams.ContainsKey(prm))){
+			//GD.Print("All params bound, passing to def");
+			ExecutionFrame defFrame = new ExecutionFrame(currentFrame.application.func.def.expand(currentFrame.boundParams), currentFrame);
+			currentFrame = defFrame;
+			return currentFrame;
+		}
+
+		if(currentFrame.application.namedParams != null) 
+		if(!currentFrame.application.namedParams.Keys.All((key)=>currentFrame.boundParams.ContainsKey(key))){
+			var firstUnboundNamed = currentFrame.application.namedParams.First((pair)=>!currentFrame.boundParams.ContainsKey(pair.Key));
+			ExecutionFrame exFr = new ExecutionFrame(firstUnboundNamed.Value, currentFrame);
+			currentFrame.lastParamChild = exFr;
+			currentFrame.lastParamSymbol = firstUnboundNamed.Key;
+			currentFrame = exFr;
+			//GD.Print("Trying to evaluate named param " + currentFrame.lastParamSymbol);
+			return currentFrame;
+		}
+
+		if(currentFrame.application.positionalParams != null) 
+		if(currentFrame.pprmsBound != currentFrame.application.positionalParams.Length){
+			var firstUnboundPositional = currentFrame.application.positionalParams[currentFrame.pprmsBound];
+			currentFrame.pprmsBound += 1;
+			ExecutionFrame exFr = new ExecutionFrame(firstUnboundPositional, currentFrame);
+			currentFrame.lastParamChild = exFr;
+			currentFrame.lastParamSymbol = currentFrame.application.func.parameters[currentFrame.boundParams.Count];
+			currentFrame = exFr;
+			//GD.Print("Trying to evaluate positional param " + currentFrame.boundParams.Count);
+			return currentFrame;
+		}
+
+		if(currentFrame.parent != null){
+				//GD.Print("Params not fulfilled, return application to parent");
+				currentFrame.parent.valueReceived = currentFrame.application;
+				currentFrame = currentFrame.parent;
+				return currentFrame;
+		}
+		else{
+				//GD.Print("Params not fulfilled, return application");
+				return currentFrame.application;
+			}
+		}
+
+
+
+
 	public static object evalTwo(Application a, Dictionary<string, Application> namedStacked=null, Application[] positionalStacked=null){
 		
 		Dictionary<string, Application> newStacked = new Dictionary<string, Application>();
