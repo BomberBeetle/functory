@@ -21,13 +21,8 @@ public class Application
 	public Dictionary<string, Application> namedParams; //Used for the normal cable connecting
 	
 	public Application[] positionalParams; //Used for high-order passing cases where we don't have parameter names.
-	
-	//An Application without any parameters resolves to it's func
-	//Partial application is also possible.
-	
-	// Corresponding GraphNode in the graph.
-	// Will be used in the interpreter for breakpoint/prog.eval 
-	// Just do a GetParent on this sucker to get the needed GraphEdit
+
+	public GraphNode appNode;
 	
 	
 		

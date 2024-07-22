@@ -9,6 +9,8 @@ namespace Functory{
         public Expression[] positionalParams;
         public Dictionary<string, Expression> namedParams;
 
+        public GraphNode exprNode;
+
         public virtual Application expand(Dictionary<string, Application> boundParams){
             Application returnApp = null;
             if(compositeFunc != null) returnApp = compositeFunc.expand(boundParams);
@@ -40,6 +42,10 @@ namespace Functory{
                 }
                 
                 returnApp.namedParams = appNamedParams;
+            }
+
+            if(this.exprNode != null){
+                returnApp.appNode = this.exprNode;
             }
 
             return returnApp;

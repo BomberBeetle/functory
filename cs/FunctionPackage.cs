@@ -7,6 +7,7 @@ public class FunctionPackage{
     public String packageName;
     public String packageIdentifier;
 
+    public FunctionPackage parent;
     public List<FunctionPackage> ChildPackages;
 
     public List<Function> functions;
@@ -27,6 +28,25 @@ public class FunctionPackage{
         }
         foreach(FunctionPackage p in ChildPackages){
             p.CreateTree(tree, it, componentMap);
+        }
+    }
+
+    public void AddFunction(Function f){
+        f.package = this;
+        functions.Add(f);
+    }
+
+    public void AddChildPackage(FunctionPackage fp){
+        fp.parent = this;
+        ChildPackages.Add(fp);
+    }
+
+    public string GetAddress(){
+        if(parent != null){
+            return parent.GetAddress() + "." + this.packageIdentifier;
+        }
+        else{
+            return this.packageIdentifier;
         }
     }
 }

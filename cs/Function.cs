@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 
 namespace Functory.Lang {
@@ -20,6 +21,15 @@ namespace Functory.Lang {
 			this.dependentNodes = new List<GraphNode>();
 			this.interpretationInProgress = false;
 		}
+
+		public string GetAddress(){
+			if(this.package != null){
+				return this.package.GetAddress() + "." + this.name;
+			}
+			else{
+				return this.name;
+			}
+		}
 	
 		public string[] parameters;
 		public Expression def;
@@ -30,6 +40,8 @@ namespace Functory.Lang {
 		public List<GraphNode> dependentNodes;
 
 		public bool interpretationInProgress;
+
+		public FunctionPackage package;
 	
 	//WARNING: THIS IS DEPRECATED NOTES FROM AN EARLIER TIME
 	//STILL PROBABLY GONNA BE USEFUL BUT LIKE. BE CAREFUL WITH TAKING THIS AT FACE VALUE.

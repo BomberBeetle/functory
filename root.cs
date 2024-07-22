@@ -15,8 +15,16 @@ public partial class root : Control
 	HashSet<ulong> rejectDeletionNodes = new HashSet<ulong>();
 	Dictionary<ulong, Function> componentMap = new Dictionary<ulong, Function>();
 	Dictionary<ulong, Function> fnInstanceMap = new Dictionary<ulong, Function>();
+
+	List<FunctionPackage> rootPackages = new List<FunctionPackage>();
+
 	GraphEdit activeGraph;
 
+	bool inExecution = false;
+
+	System.Collections.Generic.List<Node> rootNodes;
+
+	Interpreter interpreter;
 	GraphEdit rootEditor;
 	PackedScene lambdaTemplate;
 	PackedScene lambdaParamTemplate;
@@ -133,7 +141,11 @@ public partial class root : Control
 
 		Button ffwdRun = (Button) GetNode("HSplitContainer/VBoxContainer/Panel/HBoxContainer/Button2");
 
+		Button stepRunButton = (Button) GetNode("HSplitContainer/VBoxContainer/Panel/HBoxContainer/Button");
+
 		ffwdRun.ButtonDown += FFWDRun;
+
+		stepRunButton.ButtonDown += StepRun;
 
 		Button lambdaButton = (Button) GetNode("HSplitContainer/VBoxContainer2/Button");
 
@@ -147,16 +159,21 @@ public partial class root : Control
 		projectPackage = new FunctionPackage("Projeto","project");
 
 		FunctionPackage mathPackage = new FunctionPackage("Matemática", "math");
-		mathPackage.functions.Add(new Sum());
+		mathPackage.AddFunction(new Sum());
 
 		FunctionPackage dataPackage = new FunctionPackage("Dados", "data");
-		dataPackage.functions.Add(new IntegerConstructor());
-		dataPackage.functions.Add(new BooleanConstructor());
+		dataPackage.AddFunction(new IntegerConstructor());
+		dataPackage.AddFunction(new BooleanConstructor());
 
 		FunctionPackage logicPackage = new FunctionPackage("Lógica", "logic");
-		logicPackage.functions.Add(new Equals());
-		logicPackage.functions.Add(new Not());
-		logicPackage.functions.Add(new If());
+		logicPackage.AddFunction(new Equals());
+		logicPackage.AddFunction(new Not());
+		logicPackage.AddFunction(new If());
+
+		rootPackages.Add(mathPackage);
+		rootPackages.Add(logicPackage);
+		rootPackages.Add(dataPackage);
+		rootPackages.Add(projectPackage);
 
 		Tree functionsTree = (Tree) GetNode("HSplitContainer/VBoxContainer2/TabContainer/Padrão");
 
@@ -307,7 +324,7 @@ public partial class root : Control
 
 		fnInstanceMap.Add(lambdaNode.GetInstanceId(),  lnFunc);
 
-		projectPackage.functions.Add(lnFunc);
+		projectPackage.AddFunction(lnFunc);
 		
 		updatePFTree();
 
@@ -406,12 +423,7 @@ public partial class root : Control
 				
 			}
 
-			GraphNode paramNode = new GraphNode();
-			paramNode.Title = newParams[lnFunc.parameters.Length];
-			paramNode.AddChild(new Control());
-			paramNode.SetSlotEnabledLeft(0, true);
-			paramNode.SetSlotEnabledRight(0, true);
-			paramNode.AddToGroup("LambdaParamNodes");
+			GraphNode paramNode = CreateParamNode(newParams[lnFunc.parameters.Length]);
 
 			lbdaParam.TextChanged += (string text) => {
 				int paramIdx = lbdaParam.GetIndex() - 2; //evil and bad copy paste
@@ -424,8 +436,7 @@ public partial class root : Control
 				}
 			};
 
-			paramNodes.Add(paramNode);
-			rejectDeletionNodes.Add(paramNode.GetInstanceId()); //marks the node as un-deletable by user
+			paramNodes.Add(paramNode); 
 			lambdaEditor.AddChild(paramNode);
 
 			Button deleteParamButton = lbdaParam.GetNode<Button>("Button");
@@ -609,14 +620,14 @@ public partial class root : Control
 		}
 	}
 
-	public void FFWDRun() {
+	public void SetupRun(){
 		foreach(Function lf in projectPackage.functions){
 			lf.def = null;
 		} //clear out all old lambda defs
 
 		Godot.Collections.Array<Godot.Collections.Dictionary> connections = rootEditor.GetConnectionList();
 
-		IEnumerable<Node> rootNodes = rootEditor.GetChildren().Where((Node n) => {
+		rootNodes = rootEditor.GetChildren().Where((Node n) => {
 			if(n is GraphNode gn){
 				if(!connections.Any((dic)=>
 					rootEditor.GetNode(dic["from_node"].As<StringName>().ToString()) == gn	
@@ -625,18 +636,210 @@ public partial class root : Control
 				}
 			}
 			return false;
-		});
+		}).ToList();
 
-		foreach(GraphNode gn in rootNodes){
-			StyleBoxFlat styleBox = new StyleBoxFlat();
-			styleBox.BgColor = Color.FromHtml("FF0000FF");
-			gn.AddThemeStyleboxOverride("titlebar", styleBox);
+	}
 
-			Functory.Expression rootNodeE = InterpretNode(gn, rootEditor);
-			GD.Print("root node expr: " + rootNodeE);
-			GD.Print("Attempting to interpret expression...");
-			GD.Print("Evaluated to: " + Functory.Lang.Interpreter.evalTwo(rootNodeE.expand(null)));
+	public SerializedEditor SerializeEditor(GraphEdit editor, ProjectRegistry reg){
+		SerializedEditor serialized = new SerializedEditor();
+		List<SerializedNode> nodes = new List<SerializedNode>();
+
+		foreach(Node node in editor.GetChildren()){
+			if (node is GraphNode gn){
+				SerializedNode sn = new SerializedNode();
+				sn.X = gn.Position.X;
+				sn.Y = gn.Position.Y;
+				sn.nodeId = gn.GetInstanceId().ToString(); //god bless godot for UUID's
+				if(gn.IsInGroup("Lambda")){
+					sn.IsLambdaNode = true;
+					Function lambdaFn = fnInstanceMap[gn.GetInstanceId()];
+					sn.parameters = lambdaFn.parameters;
+					sn.registryAddress = lambdaFn.GetAddress();
+					sn.defEditor = SerializeEditor(gn.GetNode<GraphEdit>("GraphEdit"),reg);
+					sn.defEditor.IsLambdaEditor = true;
+					sn.defEditor.LambdaNodeId = sn.nodeId;
+					reg.functions.Add(new Tuple<string, string>(sn.nodeId, lambdaFn.name));
+				}
+				else if(gn.IsInGroup("LambdaOutputNodes")){
+					sn.IsOutputNode = true;
+				}
+				else if(gn.IsInGroup("LambdaParamNodes")){
+					sn.IsParamNode = true;
+					sn.paramName = gn.Title; //TODO STOP DOING THAT!!! NOT OKAY!!! NOT GOOD!!!! WHAT THE FUCK???
+				}
+				else{
+					sn.registryAddress = fnInstanceMap[gn.GetInstanceId()].GetAddress();
+				}
+
+				nodes.Add(sn);
+			}
+		}
+
+		serialized.nodes = nodes.ToArray();
+
+		List<SerializedEditor.Connection> conns = new List<SerializedEditor.Connection>();
+		foreach(Godot.Collections.Dictionary dic in editor.GetConnectionList()){
+			SerializedEditor.Connection conn = new SerializedEditor.Connection();
+			conn.toPort = dic["to_port"].As<int>();
+			conn.toNodeId = editor.GetNode(dic["to_node"].As<StringName>().ToString()).GetInstanceId().ToString();
+			conn.fromNodeId = conn.toNodeId = editor.GetNode(dic["from_node"].As<StringName>().ToString()).GetInstanceId().ToString();
+			conns.Add(conn);
+		}
+
+		serialized.connections = conns.ToArray();
+
+		return serialized;
+	}
+
+	public void UnpackProjectRegistry(ProjectRegistry reg){
+		projectPackage.ChildPackages.Clear();
+		projectPackage.functions.Clear();
+
+		foreach(var (fnName, _) in reg.functions){
+			Function nF = new Function();
+			nF.name = fnName;
+			projectPackage.AddFunction(nF);
+		}
+	}
+
+	public void LoadSerializedProject(SerializedEditor sEditor, ProjectRegistry reg, GraphEdit targetEditor){
+
+		Dictionary<string, GraphNode> createdNodes = new Dictionary<string, GraphNode>(); //Serialized ID - GraphNode instance mapping
+		//make sure to set up callbacks for everything
+
+		foreach(SerializedNode sn in sEditor.nodes){
+			if(sn.IsParamNode){
+				//just absolutely slam that thing there. again. dont forget to set the title (which is bad)
+			}
+			else if(sn.IsOutputNode){
+				//just absolutely slam that thing there.
+			}
+			else if(sn.IsLambdaNode){
+				//Let's just assume that UnpackProjectRegistry has been run previously so we can inject the correct data into the Function instances it will create.
+				//Instance new LambdaNode here
+				//Insert params into LambdaNode
+				//Run LoadSerializedProject on its internal SerializedEditor using targetEditor=new LambdaNode's editor
+
+			}
+			else{
+				//TODO: Make some way for the function address to be converted to a function map. this will probably require that an array with all root packages be made.
+			}
+
+			foreach(var cn in sEditor.connections){
+				//Extract connection-making code from node connection handlers spread through the code.
+			}
+		}
+	}
+
+	public void FFWDRun() {
+
+		if(!inExecution){
+
+			SetupRun();
+			interpreter = new Interpreter();
+			if(rootNodes.Count != 0){
+					Node start = rootNodes.First(); 
+					rootNodes.RemoveAt(0);
+					Functory.Expression startNodeE = InterpretNode((GraphNode) start, rootEditor);
+					interpreter.currentFrame = new ExecutionFrame(startNodeE.expand(null));
+					StyleBoxFlat styleBox = new StyleBoxFlat();
+					styleBox.BgColor = Color.FromHtml("00BB00FF");
+					styleBox.ShadowColor = Color.FromHtml("00BB00FF");
+					interpreter.currentFrame.application.appNode.AddThemeStyleboxOverride("titlebar", styleBox);
+			}
+			else{
+					inExecution = false;
+					return;
+			}
+			/*foreach(GraphNode gn in rootNodes){
+				StyleBoxFlat styleBox = new StyleBoxFlat();
+				styleBox.BgColor = Color.FromHtml("FF0000FF");
+				gn.AddThemeStyleboxOverride("titlebar", styleBox);
+
+				Functory.Expression rootNodeE = InterpretNode(gn, rootEditor);
+				GD.Print("root node expr: " + rootNodeE);
+				GD.Print("Attempting to interpret expression...");
+				GD.Print("Evaluated to: " + Functory.Lang.Interpreter.evalTwo(rootNodeE.expand(null)));
 			
+			}*/
+		}
+
+		while(interpreter.currentFrame != null){
+			var res = interpreter.EvalStep();
+			interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
+			while(res is ExecutionFrame){
+				res = interpreter.EvalStep();
+				interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
+			}
+			AcceptDialog accept = new AcceptDialog();
+			accept.DialogText = "Resultado" + interpreter.currentFrame.application.appNode.Title + ": " + res;
+			AddChild(accept);
+			accept.Show();
+			if(rootNodes.Count != 0){
+					Node start = rootNodes.First(); 
+					rootNodes.RemoveAt(0);
+					Functory.Expression startNodeE = InterpretNode((GraphNode) start, rootEditor);
+					interpreter.currentFrame = new ExecutionFrame(startNodeE.expand(null));
+			}
+			else{
+				interpreter.currentFrame = null;
+			}
+		}
+
+		inExecution = false;
+	}
+
+	public void StepRun(){
+		if(!inExecution){
+			SetupRun();
+			interpreter = new Interpreter();
+			inExecution = true;
+		}
+
+		if(interpreter.currentFrame == null){
+				if(rootNodes.Count != 0){
+					Node start = rootNodes.First(); 
+					rootNodes.RemoveAt(0);
+					Functory.Expression startNodeE = InterpretNode((GraphNode) start, rootEditor);
+					interpreter.currentFrame = new ExecutionFrame(startNodeE.expand(null));
+					StyleBoxFlat styleBox = new StyleBoxFlat();
+					styleBox.BgColor = Color.FromHtml("00BB00FF");
+					styleBox.ShadowColor = Color.FromHtml("00BB00FF");
+					interpreter.currentFrame.application.appNode.AddThemeStyleboxOverride("titlebar", styleBox);
+				}
+				else{
+					inExecution = false;
+					return;
+				}
+			}
+
+		else{
+			interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
+			var res = interpreter.EvalStep();
+			if(res is not ExecutionFrame){
+				GD.Print(res);
+				AcceptDialog accept = new AcceptDialog();
+				accept.DialogText = "Resultado: " + res;
+				AddChild(accept);
+				accept.Show();
+				if(rootNodes.Count != 0){
+					Node start = rootNodes.First(); 
+					rootNodes.RemoveAt(0);
+					Functory.Expression startNodeE = InterpretNode((GraphNode) start, rootEditor);
+					interpreter.currentFrame = new ExecutionFrame(startNodeE.expand(null));
+				}
+				else{
+					inExecution = false;
+					return;
+				}
+			}
+			else{
+				var frame = (ExecutionFrame) res;
+				StyleBoxFlat styleBox = new StyleBoxFlat();
+				styleBox.BgColor = Color.FromHtml("00BB00FF");
+				styleBox.ShadowColor = Color.FromHtml("00BB00FF");
+				frame.application.appNode.AddThemeStyleboxOverride("titlebar", styleBox);
+			}
 		}
 	}
 
@@ -669,6 +872,8 @@ public partial class root : Control
 				fnIns.interpretationInProgress = false;
 			}
 			resultExpr = new Functory.Expression(fnIns, null, namedParams);
+			resultExpr.exprNode = gn;
+
 			return resultExpr;
 		}
 		else{
@@ -687,7 +892,13 @@ public partial class root : Control
 					posParams[i] = null; //bad...
 				   }
 				}
-				return new Functory.Expression(new BindingOf(gn.Title),posParams,null);
+
+				var retNode = new Functory.Expression(new BindingOf(gn.Title),posParams,null); //BAD BAD BAD DONT USE GN.TITLE OH GOD OH FUCK ITS GONNA EXPLODE
+				//TODO FIX THIS SHIT!!!!!!!!!
+				//SERIOUSLY!!!!
+				retNode.exprNode = gn;
+
+				return retNode;
 			}
 			else if(gn.IsInGroup("LambdaOutputNode")){
 				Godot.Collections.Array<Godot.Collections.Dictionary> connections = graph.GetConnectionList();
@@ -704,6 +915,17 @@ public partial class root : Control
 			}
 			return null;
 		}
+	}
+
+	GraphNode CreateParamNode(string paramTitle){
+		GraphNode paramNode = new GraphNode();
+		paramNode.Title = paramTitle;
+		paramNode.AddChild(new Control());
+		paramNode.SetSlotEnabledLeft(0, true);
+		paramNode.SetSlotEnabledRight(0, true);
+		paramNode.AddToGroup("LambdaParamNodes");
+		rejectDeletionNodes.Add(paramNode.GetInstanceId());
+		return paramNode;
 	}
 	
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
