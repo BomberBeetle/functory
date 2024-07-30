@@ -12,6 +12,8 @@ namespace Functory{
 
         public string paramName;
 
+        public string paramIdx;
+
         public string nodeId;
     }
 }

@@ -42,6 +42,8 @@ namespace Functory.Lang {
 		public bool interpretationInProgress;
 
 		public FunctionPackage package;
+
+		public string serializedNodeId;
 	
 	//WARNING: THIS IS DEPRECATED NOTES FROM AN EARLIER TIME
 	//STILL PROBABLY GONNA BE USEFUL BUT LIKE. BE CAREFUL WITH TAKING THIS AT FACE VALUE.
