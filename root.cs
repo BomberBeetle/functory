@@ -143,6 +143,18 @@ public partial class root : Control
 		projectFuncTree.ScrollVerticalEnabled = false;
 		projectFuncTree.ScrollHorizontalEnabled = false;
 
+		Button saveButton = GetNode<Button>("HSplitContainer/VBoxContainer/Panel/Button5");
+
+		saveButton.ButtonDown += () => {
+			ProjectRegistry reg = new ProjectRegistry();
+
+			SerializedEditor rootEditSerialized = SerializeEditor(rootEditor, reg);
+
+			SerializedProject serialized = new SerializedProject(rootEditSerialized, reg);
+
+			serialized.WriteToXmlFile("test.xml");
+		};
+
 		Button ffwdRun = (Button) GetNode("HSplitContainer/VBoxContainer/Panel/HBoxContainer/Button2");
 
 		Button stepRunButton = (Button) GetNode("HSplitContainer/VBoxContainer/Panel/HBoxContainer/Button");
@@ -455,7 +467,7 @@ public partial class root : Control
 			SerializedEditor.Connection conn = new SerializedEditor.Connection();
 			conn.toPort = dic["to_port"].As<int>();
 			conn.toNodeId = editor.GetNode(dic["to_node"].As<StringName>().ToString()).GetInstanceId().ToString();
-			conn.fromNodeId = conn.toNodeId = editor.GetNode(dic["from_node"].As<StringName>().ToString()).GetInstanceId().ToString();
+			conn.fromNodeId = editor.GetNode(dic["from_node"].As<StringName>().ToString()).GetInstanceId().ToString();
 			conns.Add(conn);
 		}
 
@@ -911,10 +923,12 @@ public partial class root : Control
 	}
 
 	LineEdit CreateParamLabel(string name, GraphNode lambdaNode, GraphNode paramNode, int idx, Function lnFunc, GraphEdit lambdaEditor, GraphEdit.DisconnectionRequestEventHandler handleDisconnectLambda){
+		
 		LineEdit lbdaParam = lambdaParamTemplate.Instantiate<LineEdit>();
 		lambdaNode.AddChild(lbdaParam);
 		lambdaNode.MoveChild(lbdaParam, -2);
 		lambdaNode.SetSlotEnabledLeft(idx+2, true); //Enables the slot at the index of the last param+2, to account for the GraphEdit and label
+		lbdaParam.Text = name;
 
 		lbdaParam.TextChanged += (string text) => {
 				int paramIdx = lbdaParam.GetIndex() - 2; //evil and bad copy paste
