@@ -42,5 +42,16 @@ namespace Functory{
                 twriter?.Close();
             }
         }
+
+        public static SerializedProject CreateFromXmlFile(string path){
+            SerializedProject project;
+            using (XmlReader reader = XmlReader.Create(path))
+            {
+                DataContractSerializer serializer = new DataContractSerializer(typeof(SerializedProject));
+                project = (SerializedProject)serializer.ReadObject(reader);
+            }
+            return project;
+
+        }
     }
 }

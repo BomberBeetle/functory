@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace Functory{
@@ -34,5 +35,8 @@ namespace Functory{
         [DataMember]
 
         public string nodeId;
+
+        [DataMember]
+        public Dictionary<string, object> constructorFields;
     }
 }

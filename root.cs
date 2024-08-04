@@ -145,6 +145,14 @@ public partial class root : Control
 
 		Button saveButton = GetNode<Button>("HSplitContainer/VBoxContainer/Panel/Button5");
 
+		Button newButton = GetNode<Button>("HSplitContainer/VBoxContainer/Panel/Button6");
+
+		Button loadButton = GetNode<Button>("HSplitContainer/VBoxContainer/Panel/Button7");
+
+		loadButton.ButtonDown += LoadButtonPressed;
+
+		newButton.ButtonDown += ClearProject;
+
 		saveButton.ButtonDown += () => {
 			ProjectRegistry reg = new ProjectRegistry();
 
@@ -453,7 +461,11 @@ public partial class root : Control
 					sn.paramName = gn.Title; //TODO STOP DOING THAT!!! NOT OKAY!!! NOT GOOD!!!! WHAT THE FUCK???
 				}
 				else{
-					sn.registryAddress = fnInstanceMap[gn.GetInstanceId()].GetAddress();
+					Function nodeFn = fnInstanceMap[gn.GetInstanceId()];
+					sn.registryAddress = nodeFn.GetAddress();
+					if(nodeFn is BuiltInFunction btFn){
+						sn.constructorFields = btFn.ExportConstructorFields();
+					}
 				}
 
 				nodes.Add(sn);
@@ -517,25 +529,20 @@ public partial class root : Control
 
 		Dictionary<string, GraphNode> createdNodes = new Dictionary<string, GraphNode>(); //Serialized ID - GraphNode instance mapping
 		//make sure to set up callbacks for everything
-
+		
 		
 
 		foreach(SerializedNode sn in sEditor.nodes){
 			if(sn.IsParamNode){
 				//just absolutely slam that thing there. again. dont forget to set the title (which is bad)
-				GraphNode prnode = new GraphNode();
-				prnode.Position = new Vector2(sn.X, sn.Y);
-				prnode.Title = sn.paramName;
-				prnode.AddToGroup("LambdaParamNodes");
-				rejectDeletionNodes.Add(prnode.GetInstanceId());
+				GraphNode prnode = CreateParamNode(sn.paramName);
+				prnode.PositionOffset = new Vector2(sn.X, sn.Y);
 				targetEditor.AddChild(prnode);
 				createdNodes.Add(sn.nodeId, prnode);
 			}
-			else if(sn.IsOutputNode){
-				GraphNode prnode = new GraphNode();
-				prnode.Position = new Vector2(sn.X, sn.Y);
-				prnode.Title = "Saída";
-				prnode.AddToGroup("LambdaOutputNode");
+			else if(sn.IsOutputNode){ // we actually don't want to create a new one, since the create lambda function does that. let's just hijack the created output node.
+				GraphNode prnode = (GraphNode) targetEditor.GetChildren().First((node) => node.IsInGroup("LambdaOutputNode"));
+				prnode.PositionOffset = new Vector2(sn.X, sn.Y);
 				rejectDeletionNodes.Add(prnode.GetInstanceId());
 				targetEditor.AddChild(prnode);
 				createdNodes.Add(sn.nodeId, prnode);
@@ -547,6 +554,7 @@ public partial class root : Control
 
 				lambdaNode.Title = reg.functions[sn.nodeId];
 				fnInstanceMap.Add(lambdaNode.GetInstanceId(), fnFromRegistry);
+				fnFromRegistry.parameters = sn.parameters;
 				fnFromRegistry.defNode = lambdaNode;
 
 				GraphEdit lambdaEdit = lambdaNode.GetNode<GraphEdit>("GraphEdit");
@@ -569,6 +577,7 @@ public partial class root : Control
 					GraphNode associatedParamNode = prNodesAssociated.First((node)=>node.Title==param);
 					prNodesAssociated.Remove(associatedParamNode);
 					CreateParamLabel(param, lambdaNode, associatedParamNode, idx, fnFromRegistry, lambdaEdit, dcHandler);
+					AddNewParamToDepNodes(fnFromRegistry, param, idx+1);
 					idx++;
 				}
 
@@ -578,6 +587,8 @@ public partial class root : Control
 
 				lambdaNode.NodeDeselected += GetNodeDeselectedHandler(lambdaNode, titleEdit);
 
+				lambdaNode.PositionOffset = new Vector2(sn.X, sn.Y);
+
 				createdNodes.Add(sn.nodeId, lambdaNode);
 
 				targetEditor.AddChild(lambdaNode);
@@ -586,18 +597,33 @@ public partial class root : Control
 			else{
 				Function fnFromRegistry = GetFunctionFromAddress(sn.registryAddress);
 				GraphNode node = new GraphNode();
-				node.Position = new Vector2(sn.X, sn.Y);
+
+				Dictionary<string, object> constructorFields = null;
+
+				if(fnFromRegistry is BuiltInFunction btFn){
+					 constructorFields = sn.constructorFields;
+				}
+				
 				node.Title = fnFromRegistry.name;
 				createdNodes.Add(sn.nodeId, node);
-				AddFunctionToEditor(node, fnFromRegistry, targetEditor);
+				AddFunctionToEditor(node, fnFromRegistry, targetEditor, constructorFields);
+				node.PositionOffset = new Vector2(sn.X, sn.Y);
+			}
+
 			}
 
 			foreach(var cn in sEditor.connections){
 				var fromN = createdNodes[cn.fromNodeId];
 				var toN = createdNodes[cn.toNodeId];
+				if(toN.IsInGroup("LambdaParamNodes")){
+					Label lblTest = new Label();
+					lblTest.Text = "";
+					toN.AddChild(lblTest);
+					toN.SetSlotEnabledLeft(toN.GetChildCount()-1, true);
+				}
 				targetEditor.ConnectNode(fromN.Name, 0, toN.Name, cn.toPort);		
 			}
-		}
+		
 		return createdNodes;
 	}
 
@@ -659,37 +685,46 @@ public partial class root : Control
 		inExecution = false;
 	}
 
-	public void AddFunctionToEditor(GraphNode funNode, Function fn, GraphEdit graph){
+	public void AddFunctionToEditor(GraphNode funNode, Function fn, GraphEdit graph, Dictionary<string, object> constructorFields = null){
 			funNode.Title = fn.name;
 
-				BuiltInFunction btFn = fn as BuiltInFunction;
-				if(btFn != null){
+		if (fn is BuiltInFunction btFn)
+		{
 
-					Type fnType = fn.GetType();
-					BuiltInFunction btFnReplica = (BuiltInFunction) System.Activator.CreateInstance(fnType);
-					fn = btFnReplica;
-					btFnReplica.defNode = funNode;
-;					foreach(FieldInfo field in fnType.GetFields()){
-						if(Attribute.IsDefined(field, typeof(ConstructorField))){
-							LineEdit propertyEditor = new LineEdit();
-							propertyEditor.Text = field.GetValue(btFnReplica).ToString();
-							propertyEditor.TextChanged += (string text) => {
-								bool accept = btFnReplica.UpdateConstructorField(field, text);
-								if(accept){
-									GD.Print("Property " + field.Name + " of " + fn + "changed to " + text);
-									propertyEditor.RemoveThemeColorOverride("font_color");
-								}
-								else{
-									GD.Print("\"" + text + "\" rejected for property " + field.Name + " of function " + fn);
-									propertyEditor.AddThemeColorOverride("font_color", new Color(0.75f, 0.25f, 0.1f));
-								}
-							};
-							funNode.AddChild(propertyEditor);
+			Type fnType = fn.GetType();
+			BuiltInFunction btFnReplica = (BuiltInFunction)System.Activator.CreateInstance(fnType);
+			fn = btFnReplica;
+			btFnReplica.defNode = funNode;
+			btFnReplica.package = btFn.package;
+			if(constructorFields != null){
+				btFnReplica.LoadConstructorFields(constructorFields);
+			}
+			foreach (FieldInfo field in fnType.GetFields())
+			{
+				if (Attribute.IsDefined(field, typeof(ConstructorField)))
+				{
+					LineEdit propertyEditor = new LineEdit();
+					propertyEditor.Text = field.GetValue(btFnReplica).ToString();
+					propertyEditor.TextChanged += (string text) =>
+					{
+						bool accept = btFnReplica.UpdateConstructorField(field, text);
+						if (accept)
+						{
+							GD.Print("Property " + field.Name + " of " + fn + "changed to " + text);
+							propertyEditor.RemoveThemeColorOverride("font_color");
 						}
-					}
+						else
+						{
+							GD.Print("\"" + text + "\" rejected for property " + field.Name + " of function " + fn);
+							propertyEditor.AddThemeColorOverride("font_color", new Color(0.75f, 0.25f, 0.1f));
+						}
+					};
+					funNode.AddChild(propertyEditor);
 				}
+			}
+		}
 
-				int paramsOffset = 0;
+		int paramsOffset = 0;
 
 				if(fn.parameters.Count() != 0){
 
@@ -888,21 +923,7 @@ public partial class root : Control
 
 			LineEdit lbdaParam = CreateParamLabel(newParams[lnFunc.parameters.Length], lambdaNode, paramNode, lnFunc.parameters.Length,lnFunc, lambdaEditor, handleDisconnectLambda);
 
-			foreach(GraphNode depNode in lnFunc.dependentNodes){
-				Label newPrmLabel = new Label();
-				newPrmLabel.Text = lbdaParam.Text;
-
-				if(lnFunc.parameters.Length == 0){
-					Node dummy = depNode.GetChild(0);
-					depNode.RemoveChild(dummy);
-					dummy.QueueFree();
-				}
-
-				depNode.AddChild(newPrmLabel);
-				depNode.SetSlotEnabledLeft(newParams.Length - 1, true);
-
-				
-			}
+			AddNewParamToDepNodes(lnFunc, lbdaParam.Text, newParams.Length);
 
 			paramNodes.Add(paramNode); 
 			lambdaEditor.AddChild(paramNode);
@@ -1056,10 +1077,44 @@ public partial class root : Control
 		};
 	}
 
+	void ClearProject(){
+		foreach(Node n in rootEditor.GetChildren()){
+			n.QueueFree();
+		}
+		rejectDeletionNodes.Clear();
+		selectedNodes.Clear();
+		fnInstanceMap.Clear();
+		activeGraph = rootEditor;
+		projectPackage.functions.Clear();
+	}
+
 	Action GetNodeDeselectedHandler(GraphNode lambdaNode, LineEdit titleEdit){
 		return () => {
 			if(titleEdit.IsInsideTree()) lambdaNode.GetParent().RemoveChild(titleEdit);
 		}; 
+	}
+
+	void LoadButtonPressed(){
+		var proj = SerializedProject.CreateFromXmlFile("test.xml");
+		ClearProject();
+		UnpackProjectRegistry(proj.registry);
+		LoadSerializedProject(proj.rootEditor, proj.registry, rootEditor);
+	}
+
+	void AddNewParamToDepNodes(Function lnFunc, string paramName, int prmCount){
+		foreach(GraphNode depNode in lnFunc.dependentNodes){
+				Label newPrmLabel = new Label();
+				newPrmLabel.Text = paramName;
+
+				if(lnFunc.parameters.Length == 0){
+					Node dummy = depNode.GetChild(0);
+					depNode.RemoveChild(dummy);
+					dummy.QueueFree();
+				}
+
+				depNode.AddChild(newPrmLabel);
+				depNode.SetSlotEnabledLeft(prmCount - 1, true);
+			}
 	}
 	
 	// Called every frame. 'delta' is the elapsed time since the previous frame.

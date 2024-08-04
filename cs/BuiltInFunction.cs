@@ -7,12 +7,21 @@ namespace Functory.Lang {
 	public class ConstructorField : Attribute {
 
 	}
+
 	public abstract class BuiltInFunction : Function
 		{
 			public abstract object evalProgressive(Dictionary<string, Application> boundParams);
 			public abstract object eval(Dictionary<string, Application> parameters);
 			public virtual bool UpdateConstructorField(FieldInfo field, string text){
 				return false;
+			}
+
+			public virtual void LoadConstructorFields(Dictionary<string, object> conFields){
+
+			}
+
+			public virtual Dictionary<string, object> ExportConstructorFields(){
+				return null;
 			}
 		}
 
@@ -45,7 +54,8 @@ namespace Functory.Lang {
 			else{
 				return (int) boundParams["a"].result + (int) boundParams["b"].result;
 			}
-
+			
+			
 
 			/*
 			yield return new ParamEvaluationRequest("a");
@@ -90,7 +100,15 @@ namespace Functory.Lang {
 		public override object evalProgressive(Dictionary<string, Application> boundParams){
 			return this.value;
 		}
-	
+		
+		public override void LoadConstructorFields(Dictionary<string, object> conFields){
+			this.value = (int) conFields["value"];
+		}
+
+		public override Dictionary<string,object> ExportConstructorFields(){
+			return new Dictionary<string, object>{{"value", this.value}};
+		}
+
 	}	
 	
 	public class BooleanConstructor : BuiltInFunction {
@@ -126,7 +144,13 @@ namespace Functory.Lang {
 		public override object evalProgressive(Dictionary<string, Application> boundParams){
 			return this.value;
 		}
-	
+
+		public override void LoadConstructorFields(Dictionary<string, object> conFields){
+			this.value = (bool) conFields["value"];
+		}
+		public override Dictionary<string,object> ExportConstructorFields(){
+			return new Dictionary<string, object>{{"value", this.value}};
+		}
 	}
 	
 	public class If : BuiltInFunction {
