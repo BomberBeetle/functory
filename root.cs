@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Functory;
 using System.Transactions;
+using System.IO;
 
 
 public partial class root : Control
@@ -34,10 +35,17 @@ public partial class root : Control
 	Tree projectFuncTree;
 	FunctionPackage projectPackage;
 
+	string filename = null;
+
+	bool modified = false;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{	
-		
+		GetTree().AutoAcceptQuit = false;
+		GetWindow().Title = "Functory";
+
+
 		lambdaTemplate = GD.Load<PackedScene>("res://LambdaNode.tscn");
 		lambdaParamTemplate = GD.Load<PackedScene>("res://LambdaParam.tscn");
 
@@ -151,17 +159,9 @@ public partial class root : Control
 
 		loadButton.ButtonDown += LoadButtonPressed;
 
-		newButton.ButtonDown += ClearProject;
+		newButton.ButtonDown += NewButtonPressed;
 
-		saveButton.ButtonDown += () => {
-			ProjectRegistry reg = new ProjectRegistry();
-
-			SerializedEditor rootEditSerialized = SerializeEditor(rootEditor, reg);
-
-			SerializedProject serialized = new SerializedProject(rootEditSerialized, reg);
-
-			serialized.WriteToXmlFile("test.xml");
-		};
+		saveButton.ButtonDown += SaveButtonPressed;
 
 		Button ffwdRun = (Button) GetNode("HSplitContainer/VBoxContainer/Panel/HBoxContainer/Button2");
 
@@ -218,6 +218,8 @@ public partial class root : Control
 				funNode.Title = fn.name;
 
 				AddFunctionToEditor(funNode, fn, activeGraph);
+
+				MarkAsModified();
 			}
 		};
 
@@ -233,25 +235,9 @@ public partial class root : Control
 				
 				fn.dependentNodes.Add(funNode);
 
-				for(int i = 0; i < fn.parameters.Length; i++){
-					Label prmLabel = new Label();
-					prmLabel.Text = fn.parameters[i];
-					funNode.AddChild(prmLabel);
-					funNode.SetSlotEnabledLeft(i, true);
-					funNode.SetSlotEnabledRight(i, false);
-				}
+				AddFunctionToEditor(funNode, fn, activeGraph);
 
-				if(fn.parameters.Length == 0){
-					funNode.AddChild(new Control());
-					funNode.SetSlotEnabledLeft(0, false);
-				}
-
-				funNode.SetSlotEnabledRight(0, true);
-				funNode.Title = fn.name;
-
-				fnInstanceMap.Add(funNode.GetInstanceId(), fn);
-				activeGraph.AddChild(funNode);
-
+				MarkAsModified();
 			}
 			else {
 				//????
@@ -280,6 +266,8 @@ public partial class root : Control
 	public void CreateLambda(){
 		GraphNode lambdaNode = (GraphNode) lambdaTemplate.Instantiate();
 		activeGraph.AddChild(lambdaNode);
+
+		lambdaNode.Dragged += (x, y) => MarkAsModified();
 
 		Function lnFunc = new Function();
 		lnFunc.name = "Lambda" + projectPackage.functions.Count;
@@ -316,6 +304,8 @@ public partial class root : Control
 		lambdaEditor.DisconnectionRequest += handleDisconnectLambda;
 
 		addParamButton.Pressed += GetCreateParamHandler(lnFunc, lambdaNode, paramNodes, lambdaEditor, handleDisconnectLambda);
+	
+		MarkAsModified();
 	}
 	
 	public void CleanUpDisposedNodes(List<GraphNode> nodes){
@@ -327,7 +317,10 @@ public partial class root : Control
 		var connections = graph.GetConnectionList();
 		bool alreadyConnected = connections.Any((Godot.Collections.Dictionary conn) => {return conn["to_port"].As<int>()==to_port && conn["to_node"].As<StringName>()==to_node;});
 
-		if(!alreadyConnected) graph.ConnectNode(from_node, from_port, to_node, to_port);
+		if(!alreadyConnected){
+			graph.ConnectNode(from_node, from_port, to_node, to_port);
+			MarkAsModified();
+		}
 	}
 
 	public void OnNodeSelected(GraphNode node){
@@ -345,7 +338,7 @@ public partial class root : Control
 
 
 			if(graph.GetChildren().Contains(n) && !rejectDeletionNodes.Contains(n.GetInstanceId())){
-				
+				MarkAsModified();
 				foreach(Godot.Collections.Dictionary con in graph.GetConnectionList()){
 					StringName to_node = con["to_node"].As<StringName>();
 					StringName from_node = con["from_node"].As<StringName>();
@@ -390,6 +383,7 @@ public partial class root : Control
 	}
 	public void OnGraphDisconnectRequest(StringName from_node, int from_port, StringName to_node, int to_port, GraphEdit graph){
 		graph.DisconnectNode(from_node, from_port, to_node, to_port);
+		MarkAsModified();
 	}
 
 	public void UpdatePFTree(){
@@ -539,18 +533,21 @@ public partial class root : Control
 				prnode.PositionOffset = new Vector2(sn.X, sn.Y);
 				targetEditor.AddChild(prnode);
 				createdNodes.Add(sn.nodeId, prnode);
+				
 			}
 			else if(sn.IsOutputNode){ // we actually don't want to create a new one, since the create lambda function does that. let's just hijack the created output node.
 				GraphNode prnode = (GraphNode) targetEditor.GetChildren().First((node) => node.IsInGroup("LambdaOutputNode"));
+				prnode.Dragged += (x, y) => MarkAsModified();
 				prnode.PositionOffset = new Vector2(sn.X, sn.Y);
 				rejectDeletionNodes.Add(prnode.GetInstanceId());
-				targetEditor.AddChild(prnode);
 				createdNodes.Add(sn.nodeId, prnode);
 			}
 			else if(sn.IsLambdaNode){
 
 				Function fnFromRegistry = GetFunctionFromAddress(sn.registryAddress);
 				GraphNode lambdaNode = (GraphNode) lambdaTemplate.Instantiate();
+
+				lambdaNode.Dragged += (x, y) => MarkAsModified();
 
 				lambdaNode.Title = reg.functions[sn.nodeId];
 				fnInstanceMap.Add(lambdaNode.GetInstanceId(), fnFromRegistry);
@@ -623,6 +620,8 @@ public partial class root : Control
 				}
 				targetEditor.ConnectNode(fromN.Name, 0, toN.Name, cn.toPort);		
 			}
+
+		UpdatePFTree();
 		
 		return createdNodes;
 	}
@@ -668,9 +667,9 @@ public partial class root : Control
 				interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
 			}
 			AcceptDialog accept = new AcceptDialog();
-			accept.DialogText = "Resultado" + interpreter.currentFrame.application.appNode.Title + ": " + res;
+			accept.DialogText = "Resultado de " + interpreter.currentFrame.application.appNode.Title + ": " + res;
 			AddChild(accept);
-			accept.Show();
+			accept.PopupCentered();
 			if(rootNodes.Count != 0){
 					Node start = rootNodes.First(); 
 					rootNodes.RemoveAt(0);
@@ -686,7 +685,8 @@ public partial class root : Control
 	}
 
 	public void AddFunctionToEditor(GraphNode funNode, Function fn, GraphEdit graph, Dictionary<string, object> constructorFields = null){
-			funNode.Title = fn.name;
+		funNode.Title = fn.name;
+		funNode.Dragged += (x, y) => MarkAsModified();
 
 		if (fn is BuiltInFunction btFn)
 		{
@@ -783,7 +783,7 @@ public partial class root : Control
 				AcceptDialog accept = new AcceptDialog();
 				accept.DialogText = "Resultado: " + res;
 				AddChild(accept);
-				accept.Show();
+				accept.PopupCentered();
 				if(rootNodes.Count != 0){
 					Node start = rootNodes.First(); 
 					rootNodes.RemoveAt(0);
@@ -895,6 +895,7 @@ public partial class root : Control
 				GD.Print("ParamNode children: " + recv_node.GetChildCount());
 				theDeleterrrrr.QueueFree();
 			}
+			MarkAsModified();
 		};
 	}
 
@@ -908,6 +909,7 @@ public partial class root : Control
 				recv_node.AddChild(lblTest);
 				recv_node.SetSlotEnabledLeft(recv_node.GetChildCount()-1, true);
 			}
+			MarkAsModified();
 		}; 
 	}
 
@@ -929,11 +931,14 @@ public partial class root : Control
 			lambdaEditor.AddChild(paramNode);
 
 			lnFunc.parameters = newParams;
+
+			MarkAsModified();
 		};
 	}
 
 	GraphNode CreateParamNode(string paramTitle){
 		GraphNode paramNode = new GraphNode();
+		paramNode.Dragged += (x, y) => MarkAsModified();
 		paramNode.Title = paramTitle;
 		paramNode.AddChild(new Control());
 		paramNode.SetSlotEnabledLeft(0, true);
@@ -960,6 +965,7 @@ public partial class root : Control
 					Label prmLabel = (Label) depNode.GetChild(paramIdx);
 					prmLabel.Text = text;
 				}
+				MarkAsModified();
 			};
 
 		Button deleteParamButton = lbdaParam.GetNode<Button>("Button");
@@ -1041,6 +1047,7 @@ public partial class root : Control
 				lambdaNode.SetSlotEnabledLeft(lambdaNode.GetChildCount()-1, false);
 
 				lambdaNode.Position = new Vector2(lambdaNode.Position.X, lambdaNode.Position.Y+1); //This is stupid. It's also necessary for making the GraphEdit redraw the cables correctly :v)
+				MarkAsModified();
 			};
 
 		return lbdaParam;
@@ -1057,6 +1064,7 @@ public partial class root : Control
 						foreach(GraphNode depNode in lnFunc.dependentNodes){
 							depNode.Title = text;
 						}
+						MarkAsModified();
 					};
 		return titleEdit;
 	}
@@ -1077,6 +1085,51 @@ public partial class root : Control
 		};
 	}
 
+	void NewButtonPressed(){
+		if(modified){
+			var dialog = new AcceptDialog();
+			dialog.AddCancelButton("Cancelar");
+			dialog.AddButton("Sair sem Salvar", action: "exit_no_save");
+			dialog.DialogText = "O projeto foi modificado, mas ainda não foi salvo. Salvar antes de criar novo?";
+
+			dialog.Confirmed += ()=>{
+				if(filename != null){
+					Save();
+					ClearProject();
+					MarkAsUnmodified();
+					dialog.QueueFree();
+				}
+				else{
+					Action<bool> resultAction = (res) => {
+						if(res){
+							ClearProject();
+							MarkAsUnmodified();
+							filename = null;
+						}
+						dialog.QueueFree();
+					};
+					PickSaveFile(resultAction);
+				}
+			};
+
+			dialog.CustomAction += (act) => {
+				if(act == "exit_no_save"){
+					ClearProject();
+					MarkAsUnmodified();
+				}
+				dialog.QueueFree();
+			};
+
+			AddChild(dialog);
+			dialog.PopupCentered();
+		}
+		else{
+			ClearProject();
+			MarkAsUnmodified();
+			filename = null;
+		}
+	}
+
 	void ClearProject(){
 		foreach(Node n in rootEditor.GetChildren()){
 			n.QueueFree();
@@ -1086,6 +1139,7 @@ public partial class root : Control
 		fnInstanceMap.Clear();
 		activeGraph = rootEditor;
 		projectPackage.functions.Clear();
+		MarkAsModified();
 	}
 
 	Action GetNodeDeselectedHandler(GraphNode lambdaNode, LineEdit titleEdit){
@@ -1095,10 +1149,42 @@ public partial class root : Control
 	}
 
 	void LoadButtonPressed(){
-		var proj = SerializedProject.CreateFromXmlFile("test.xml");
-		ClearProject();
-		UnpackProjectRegistry(proj.registry);
-		LoadSerializedProject(proj.rootEditor, proj.registry, rootEditor);
+
+		if(modified){
+			var dialog = new AcceptDialog();
+			dialog.AddCancelButton("Cancelar");
+			dialog.AddButton("Sair sem Salvar", action: "exit_no_save");
+			dialog.DialogText = "O projeto foi modificado, mas ainda não foi salvo. Salvar antes de carregar novo?";
+
+			dialog.Confirmed += ()=>{
+				if(filename != null){
+					Save();
+					PickLoadFile();
+					dialog.QueueFree();
+				}
+				else{
+					PickSaveFile((saved)=>{
+						if(saved){
+							PickLoadFile();
+							dialog.QueueFree();
+						}
+					});
+				}
+			};
+
+			dialog.CustomAction += (act) => {
+				if(act == "exit_no_save"){
+					PickLoadFile();
+					dialog.QueueFree();
+				}
+			};
+
+			AddChild(dialog);
+			dialog.PopupCentered();
+		}
+		else{
+			PickLoadFile();
+		}
 	}
 
 	void AddNewParamToDepNodes(Function lnFunc, string paramName, int prmCount){
@@ -1117,7 +1203,115 @@ public partial class root : Control
 			}
 	}
 	
-	// Called every frame. 'delta' is the elapsed time since the previous frame.
+	void MarkAsModified(){
+		modified = true;
+		GetWindow().Title = $"Functory - {(filename ?? "(não salvo)")} - (modificado)";
+	}
+
+	void Save() {
+			ProjectRegistry reg = new ProjectRegistry();
+
+			SerializedEditor rootEditSerialized = SerializeEditor(rootEditor, reg);
+
+			SerializedProject serialized = new SerializedProject(rootEditSerialized, reg);
+
+			serialized.WriteToXmlFile(filename);
+
+			MarkAsUnmodified();
+	}
+
+	void MarkAsUnmodified(){
+		modified = false;
+		GetWindow().Title = $"Functory - {(filename ?? "(não salvo)")}";
+	}
+
+	void SaveButtonPressed(){
+		if(filename != null){
+			Save();
+		}
+		else{
+			PickSaveFile((result)=>{});
+		}
+	}
+
+	void PickSaveFile(Action<bool> saveResultAction){
+		FileDialog dialog = new FileDialog();
+		dialog.FileMode = FileDialog.FileModeEnum.SaveFile;
+		dialog.UseNativeDialog = true;
+		dialog.Access = FileDialog.AccessEnum.Filesystem;
+		dialog.AddFilter("*.fty", "XML de Grafo Functory");
+		dialog.CurrentFile = "novo.fty";
+
+		dialog.FileSelected += (path) => {
+			filename = path;
+			GD.Print(path);
+			Save();
+			MarkAsUnmodified();
+			saveResultAction(true);
+			dialog.QueueFree();
+		};
+
+		dialog.Canceled += ()=>{
+			dialog.QueueFree();
+			saveResultAction(false);
+		};
+		AddChild(dialog);
+		dialog.PopupCentered();
+	}
+
+	void PickLoadFile(){
+		FileDialog fd = new FileDialog();
+		fd.FileMode = FileDialog.FileModeEnum.OpenFile;
+		fd.UseNativeDialog = true;
+		fd.Access = FileDialog.AccessEnum.Filesystem;
+		fd.AddFilter("*.fty", "XML de Grafo Functory");
+
+		fd.FileSelected += (path) => {
+			filename = path;
+			var proj = SerializedProject.CreateFromXmlFile(filename);
+			ClearProject();
+			UnpackProjectRegistry(proj.registry);
+			LoadSerializedProject(proj.rootEditor, proj.registry, rootEditor);
+			MarkAsUnmodified();
+			fd.QueueFree();
+		};
+
+		fd.Canceled += ()=>{
+			fd.QueueFree();
+		};
+		AddChild(fd);
+		fd.PopupCentered();
+	}
+	public override void _Notification(int what)
+	{
+		if(what == NotificationWMCloseRequest){
+			if(!modified) GetTree().Quit();
+
+			else{
+				var dialog = new AcceptDialog();
+				dialog.AddCancelButton("Cancelar");
+				dialog.AddButton("Sair sem Salvar", action: "exit_no_save");
+				dialog.DialogText = "O projeto foi modificado, mas ainda não foi salvo. Salvar antes de sair?";
+
+				dialog.Confirmed += ()=>{
+					Save();
+					GetTree().Quit();
+				};
+
+				dialog.CustomAction += (act) => {
+					if(act == "exit_no_save"){
+						GetTree().Quit();
+					}
+				};
+
+				AddChild(dialog);
+				dialog.PopupCentered();
+			}	
+		}
+		else{
+			base._Notification(what);
+		}
+	}
 	public override void _Process(double delta)
 	{
 	}
