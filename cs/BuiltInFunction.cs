@@ -65,6 +65,160 @@ namespace Functory.Lang {
 			yield return a+b;*/
 		}
 	}
+
+	public class Subtract : BuiltInFunction{
+		public Subtract(){
+			this.parameters = new string[]{"a", "b"};
+			this.def = null;
+			this.name = "Subtrair";
+		}
+		public override object eval(Dictionary<string, Application> parameters){
+			
+			////GD.Print("BuiltIn:Sum : param a is " + parameters["a"]);
+			int a = (int) Interpreter.evalTwo(parameters["a"]);
+			
+			int b = (int) Interpreter.evalTwo(parameters["b"]);
+			
+			return (a - b);
+			
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+
+			else{
+				return (int) boundParams["a"].result - (int) boundParams["b"].result;
+			}
+		}
+	}
+
+	public class Multiply : BuiltInFunction{
+		public Multiply(){
+			this.parameters = new string[]{"a", "b"};
+			this.def = null;
+			this.name = "Multiplicar";
+		}
+		public override object eval(Dictionary<string, Application> parameters){
+			
+			////GD.Print("BuiltIn:Sum : param a is " + parameters["a"]);
+			int a = (int) Interpreter.evalTwo(parameters["a"]);
+			
+			int b = (int) Interpreter.evalTwo(parameters["b"]);
+			
+			return (a * b);
+			
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+
+			else{
+				return (int) boundParams["a"].result * (int) boundParams["b"].result;
+			}
+		}
+	}
+
+	public class Divide : BuiltInFunction{
+		public Divide(){
+			this.parameters = new string[]{"a", "b"};
+			this.def = null;
+			this.name = "Dividir";
+		}
+		public override object eval(Dictionary<string, Application> parameters){
+			
+			////GD.Print("BuiltIn:Sum : param a is " + parameters["a"]);
+			int a = (int) Interpreter.evalTwo(parameters["a"]);
+			
+			int b = (int) Interpreter.evalTwo(parameters["b"]);
+			
+			return (a / b);
+			
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+
+			else{
+				return (int) boundParams["a"].result / (int) boundParams["b"].result;
+			}
+		}
+	}
+
+	public class Modulo : BuiltInFunction{
+		public Modulo(){
+			this.parameters = new string[]{"a", "b"};
+			this.def = null;
+			this.name = "Modulo";
+		}
+		public override object eval(Dictionary<string, Application> parameters){
+			
+			////GD.Print("BuiltIn:Sum : param a is " + parameters["a"]);
+			int a = (int) Interpreter.evalTwo(parameters["a"]);
+			
+			int b = (int) Interpreter.evalTwo(parameters["b"]);
+			
+			return (a % b);
+			
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+
+			else{
+				return (int) boundParams["a"].result % (int) boundParams["b"].result;
+			}
+		}
+	}
+
+	public class Abs : BuiltInFunction{
+		public Abs(){
+			this.parameters = new string[]{"num"};
+			this.def = null;
+			this.name = "Abs";
+		}
+		public override object eval(Dictionary<string, Application> parameters){
+			
+			////GD.Print("BuiltIn:Sum : param a is " + parameters["a"]);
+			int num = (int) Interpreter.evalTwo(parameters["num"]);
+
+			return Math.Abs(num);
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("num")){
+				return new ParamEvaluationRequest("num");
+			}
+
+
+			else{
+				return Math.Abs((int) boundParams["num"].result);
+			}
+		}
+	}
 	
 	public class IntegerConstructor : BuiltInFunction {
 		[ConstructorField]
@@ -216,6 +370,58 @@ namespace Functory.Lang {
 			}
 			else {
 				return Object.Equals(boundParams["a"].result, boundParams["b"].result);
+			}
+		}
+	}
+
+	public class Or : BuiltInFunction {
+		public Or(){
+			this.def = null;
+			this.parameters = new string[]{"a", "b"};
+			this.name = "Ou";
+		}
+		
+		public override object eval(Dictionary<string, Application> parameters){
+			bool a = (bool)Interpreter.evalTwo(parameters["a"]);
+			bool b = (bool)Interpreter.evalTwo(parameters["b"]);
+			return a || b;
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+			else {
+				return (bool)boundParams["a"].result || (bool) boundParams["b"].result;
+			}
+		}
+	}
+
+	public class And : BuiltInFunction {
+		public And(){
+			this.def = null;
+			this.parameters = new string[]{"a", "b"};
+			this.name = "E";
+		}
+		
+		public override object eval(Dictionary<string, Application> parameters){
+			bool a = (bool)Interpreter.evalTwo(parameters["a"]);
+			bool b = (bool)Interpreter.evalTwo(parameters["b"]);
+			return a && b;
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+			else {
+				return (bool)boundParams["a"].result && (bool) boundParams["b"].result;
 			}
 		}
 	}

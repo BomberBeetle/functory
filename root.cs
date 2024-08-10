@@ -184,6 +184,11 @@ public partial class root : Control
 
 		FunctionPackage mathPackage = new FunctionPackage("Matemática", "math");
 		mathPackage.AddFunction(new Sum());
+		mathPackage.AddFunction(new Subtract());
+		mathPackage.AddFunction(new Multiply());
+		mathPackage.AddFunction(new Divide());
+		mathPackage.AddFunction(new Modulo());
+		mathPackage.AddFunction(new Abs());
 
 		FunctionPackage dataPackage = new FunctionPackage("Dados", "data");
 		dataPackage.AddFunction(new IntegerConstructor());
@@ -193,6 +198,8 @@ public partial class root : Control
 		logicPackage.AddFunction(new Equals());
 		logicPackage.AddFunction(new Not());
 		logicPackage.AddFunction(new If());
+		logicPackage.AddFunction(new Or());
+		logicPackage.AddFunction(new And());
 
 		rootPackages.Add(mathPackage);
 		rootPackages.Add(logicPackage);
