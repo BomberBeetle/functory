@@ -167,9 +167,13 @@ public partial class root : Control
 
 		Button stepRunButton = (Button) GetNode("HSplitContainer/VBoxContainer/Panel/HBoxContainer/Button");
 
+		Button resetButton = GetNode<Button>("HSplitContainer/VBoxContainer/Panel/HBoxContainer/Button4");
+
 		ffwdRun.ButtonDown += FFWDRun;
 
 		stepRunButton.ButtonDown += StepRun;
+
+		resetButton.ButtonDown += ResetRun;
 
 		Button lambdaButton = (Button) GetNode("HSplitContainer/VBoxContainer2/Button");
 
@@ -667,6 +671,7 @@ public partial class root : Control
 		}
 
 		while(interpreter.currentFrame != null){
+			try{
 			var res = interpreter.EvalStep();
 			interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
 			while(res is ExecutionFrame){
@@ -685,6 +690,14 @@ public partial class root : Control
 			}
 			else{
 				interpreter.currentFrame = null;
+			}
+			}
+			catch(Exception e){
+				AcceptDialog warn = new AcceptDialog();
+				warn.DialogText = "Houve um erro durante a execução: " + e.Message + ". Interrompendo execução";
+				AddChild(warn);
+				warn.PopupCentered();
+				ResetRun();
 			}
 		}
 
@@ -758,6 +771,17 @@ public partial class root : Control
 				graph.AddChild(funNode);
 		}
 
+
+	public void ResetRun(){
+		if(inExecution){
+			if(interpreter.currentFrame != null){
+				interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
+			}
+		}
+
+		inExecution = false;
+		interpreter.currentFrame = null;
+	}
 	public void StepRun(){
 		if(!inExecution){
 			SetupRun();
@@ -783,6 +807,7 @@ public partial class root : Control
 			}
 
 		else{
+			try{
 			interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
 			var res = interpreter.EvalStep();
 			if(res is not ExecutionFrame){
@@ -816,7 +841,16 @@ public partial class root : Control
 				runInfoLabel.SetPosition(new Vector2(frame.application.appNode.Position.X, frame.application.appNode.Position.Y - 10));
 			}
 		}
+		catch(Exception e){
+			AcceptDialog warn = new AcceptDialog();
+			warn.DialogText = "Houve um erro durante a execução: " + e.Message + ". Interrompendo execução";
+			AddChild(warn);
+			warn.PopupCentered();
+			ResetRun();
+		}
 	}
+		}
+		
 
 	
 
@@ -1301,8 +1335,19 @@ public partial class root : Control
 				dialog.DialogText = "O projeto foi modificado, mas ainda não foi salvo. Salvar antes de sair?";
 
 				dialog.Confirmed += ()=>{
-					Save();
-					GetTree().Quit();
+					if(filename != null){
+						Save();
+						dialog.QueueFree();
+						GetTree().Quit();
+					}
+					else{
+					PickSaveFile((saved)=>{
+						if(saved){
+							dialog.QueueFree();
+							GetTree().Quit();
+						}
+					});
+				}
 				};
 
 				dialog.CustomAction += (act) => {
