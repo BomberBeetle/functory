@@ -374,6 +374,110 @@ namespace Functory.Lang {
 		}
 	}
 
+	public class LargerThan : BuiltInFunction {
+		public LargerThan(){
+			this.def = null;
+			this.parameters = new string[]{"a", "b"};
+			this.name = "MaiorQue";
+		}
+		
+		public override object eval(Dictionary<string, Application> parameters){
+			object a = Interpreter.evalTwo(parameters["a"]);
+			object b = Interpreter.evalTwo(parameters["b"]);
+			return  (int) a >  (int) b;
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+			else {
+				return (int) boundParams["a"].result >  (int) boundParams["b"].result;
+			}
+		}
+	}
+
+	public class LargerThanEquals : BuiltInFunction {
+		public LargerThanEquals(){
+			this.def = null;
+			this.parameters = new string[]{"a", "b"};
+			this.name = "MaiorQueOuIgual";
+		}
+		
+		public override object eval(Dictionary<string, Application> parameters){
+			object a = Interpreter.evalTwo(parameters["a"]);
+			object b = Interpreter.evalTwo(parameters["b"]);
+			return  (int) a >=  (int) b;
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+			else {
+				return (int) boundParams["a"].result >=  (int) boundParams["b"].result;
+			}
+		}
+	}
+
+	public class SmallerThan : BuiltInFunction {
+		public SmallerThan(){
+			this.def = null;
+			this.parameters = new string[]{"a", "b"};
+			this.name = "MenorQue";
+		}
+		
+		public override object eval(Dictionary<string, Application> parameters){
+			object a = Interpreter.evalTwo(parameters["a"]);
+			object b = Interpreter.evalTwo(parameters["b"]);
+			return  (int) a < (int) b;
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+			else {
+				return (int) boundParams["a"].result <  (int) boundParams["b"].result;
+			}
+		}
+	}
+
+	public class SmallerThanEquals : BuiltInFunction {
+		public SmallerThanEquals(){
+			this.def = null;
+			this.parameters = new string[]{"a", "b"};
+			this.name = "MenorQueOuIgual";
+		}
+		
+		public override object eval(Dictionary<string, Application> parameters){
+			object a = Interpreter.evalTwo(parameters["a"]);
+			object b = Interpreter.evalTwo(parameters["b"]);
+			return  (int) a <=(int) b;
+		}
+
+		public override object evalProgressive(Dictionary<string, Application> boundParams){
+			if(!boundParams.ContainsKey("a")){
+				return new ParamEvaluationRequest("a");
+			}
+			else if(!boundParams.ContainsKey("b")){
+				return new ParamEvaluationRequest("b");
+			}
+			else {
+				return (int) boundParams["a"].result <= (int) boundParams["b"].result;
+			}
+		}
+	}
+
 	public class Or : BuiltInFunction {
 		public Or(){
 			this.def = null;

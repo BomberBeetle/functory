@@ -193,6 +193,10 @@ public partial class root : Control
 		mathPackage.AddFunction(new Divide());
 		mathPackage.AddFunction(new Modulo());
 		mathPackage.AddFunction(new Abs());
+		mathPackage.AddFunction(new LargerThan());
+		mathPackage.AddFunction(new LargerThanEquals());
+		mathPackage.AddFunction(new SmallerThan());
+		mathPackage.AddFunction(new SmallerThanEquals());
 
 		FunctionPackage dataPackage = new FunctionPackage("Dados", "data");
 		dataPackage.AddFunction(new IntegerConstructor());
