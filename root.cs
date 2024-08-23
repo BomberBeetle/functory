@@ -283,6 +283,7 @@ public partial class root : Control
 		activeGraph.AddChild(lambdaNode);
 
 		lambdaNode.Dragged += (x, y) => MarkAsModified();
+		lambdaNode.GuiInput += GetNodeGuiInputHandler(lambdaNode);
 
 		Function lnFunc = new Function();
 		lnFunc.name = "Lambda" + projectPackage.functions.Count;
@@ -562,6 +563,7 @@ public partial class root : Control
 				Function fnFromRegistry = GetFunctionFromAddress(sn.registryAddress);
 				GraphNode lambdaNode = (GraphNode) lambdaTemplate.Instantiate();
 
+				lambdaNode.GuiInput += GetNodeGuiInputHandler(lambdaNode);
 				lambdaNode.Dragged += (x, y) => MarkAsModified();
 
 				lambdaNode.Title = reg.functions[sn.nodeId];
@@ -656,6 +658,7 @@ public partial class root : Control
 					styleBox.BgColor = Color.FromHtml("00BB00FF");
 					styleBox.ShadowColor = Color.FromHtml("00BB00FF");
 					interpreter.currentFrame.application.appNode.AddThemeStyleboxOverride("titlebar", styleBox);
+					
 			}
 			else{
 					inExecution = false;
@@ -678,7 +681,16 @@ public partial class root : Control
 			try{
 			var res = interpreter.EvalStep();
 			interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
-			while(res is ExecutionFrame){
+			while(res is ExecutionFrame exFr){
+				if(exFr.application.isBreak){
+					StyleBoxFlat styleBox = new StyleBoxFlat();
+					styleBox.BgColor = Color.FromHtml("00BB00FF");
+					styleBox.ShadowColor = Color.FromHtml("00BB00FF");
+					interpreter.currentFrame.application.appNode.AddThemeStyleboxOverride("titlebar", styleBox);
+					runInfoLabel.Text = String.Join("\n", interpreter.currentFrame.boundParams.Select((kp) => kp.Key.ToString() + " : " + kp.Value.result.ToString()));
+					runInfoLabel.SetPosition(new Vector2(exFr.application.appNode.Position.X, exFr.application.appNode.Position.Y - 30));
+					return; //BYEEEE BITCH!
+				}
 				res = interpreter.EvalStep();
 				interpreter.currentFrame.application.appNode.RemoveThemeStyleboxOverride("titlebar");
 			}
@@ -711,6 +723,8 @@ public partial class root : Control
 	public void AddFunctionToEditor(GraphNode funNode, Function fn, GraphEdit graph, Dictionary<string, object> constructorFields = null){
 		funNode.Title = fn.name;
 		funNode.Dragged += (x, y) => MarkAsModified();
+
+		funNode.GuiInput += GetNodeGuiInputHandler(funNode);
 
 		if (fn is BuiltInFunction btFn)
 		{
@@ -842,7 +856,7 @@ public partial class root : Control
 				frame.application.appNode.GetParent().AddChild(runInfoLabel);
 
 				runInfoLabel.Text = String.Join("\n", interpreter.currentFrame.boundParams.Select((kp) => kp.Key.ToString() + " : " + kp.Value.result.ToString()));
-				runInfoLabel.SetPosition(new Vector2(frame.application.appNode.Position.X, frame.application.appNode.Position.Y - 10));
+				runInfoLabel.SetPosition(new Vector2(frame.application.appNode.Position.X, frame.application.appNode.Position.Y - 30));
 			}
 		}
 		catch(Exception e){
@@ -860,6 +874,7 @@ public partial class root : Control
 
 	public Functory.Expression InterpretNode(GraphNode gn, GraphEdit graph){
 		Functory.Expression resultExpr;
+
 
 		if(fnInstanceMap.ContainsKey(gn.GetInstanceId())){
 			Function fnIns = fnInstanceMap[gn.GetInstanceId()];
@@ -886,6 +901,8 @@ public partial class root : Control
 			}
 			resultExpr = new Functory.Expression(fnIns, null, namedParams);
 			resultExpr.exprNode = gn;
+
+			if(gn.IsInGroup("Breakpoint")){resultExpr.isBreak = true;}
 
 			return resultExpr;
 		}
@@ -990,6 +1007,7 @@ public partial class root : Control
 		paramNode.SetSlotEnabledRight(0, true);
 		paramNode.AddToGroup("LambdaParamNodes");
 		rejectDeletionNodes.Add(paramNode.GetInstanceId());
+		paramNode.GuiInput += GetNodeGuiInputHandler(paramNode);
 		return paramNode;
 	}
 
@@ -1125,6 +1143,27 @@ public partial class root : Control
 
 					
 					lambdaNode.AddSibling(titleEdit);
+				}
+			}
+		};
+	}
+
+	GuiInputEventHandler GetNodeGuiInputHandler(GraphNode node){
+		return (InputEvent evt) => {
+			if(evt is InputEventMouseButton eventMouse){
+				if(eventMouse.ButtonIndex == MouseButton.Right && eventMouse.Pressed){
+					GD.Print("AWAWAWA");
+					if(node.IsInGroup("Breakpoint")){
+						node.RemoveFromGroup("Breakpoint");
+						node.RemoveThemeStyleboxOverride("titlebar");
+					}
+					else{
+						node.AddToGroup("Breakpoint");
+						node.AddThemeStyleboxOverride("titlebar", new StyleBoxFlat(){
+							ShadowSize = 5,
+							ShadowColor = Color.FromHsv(0.05f, 0.8f, 1)
+						});
+					}
 				}
 			}
 		};

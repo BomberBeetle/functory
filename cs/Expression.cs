@@ -4,6 +4,8 @@ using Godot;
 
 namespace Functory{
     public class Expression{
+
+        public bool isBreak = false;
         public Function func;
         public Expression compositeFunc;
         public Expression[] positionalParams;
@@ -47,6 +49,8 @@ namespace Functory{
             if(this.exprNode != null){
                 returnApp.appNode = this.exprNode;
             }
+
+            returnApp.isBreak = this.isBreak;
 
             return returnApp;
         }

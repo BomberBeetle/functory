@@ -10,6 +10,8 @@ public class Application
 	//A private copy of the applied function's definition which stores its bindings locally.
 	public Application fdef;
 
+	public bool isBreak = false;
+
 	public object result;
 	
 	//A reference to the "original" application, if it is a copy made by another.
