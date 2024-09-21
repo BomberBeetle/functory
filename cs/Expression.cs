@@ -3,73 +3,78 @@ using Functory.Lang;
 using Godot;
 
 namespace Functory{
-    public class Expression{
+	public class Expression{
 
-        public bool isBreak = false;
-        public Function func;
-        public Expression compositeFunc;
-        public Expression[] positionalParams;
-        public Dictionary<string, Expression> namedParams;
+		public bool isBreak = false;
+		public Function func;
+		public Expression compositeFunc;
+		public Expression[] positionalParams;
+		public Dictionary<string, Expression> namedParams;
 
-        public GraphNode exprNode;
+		public GraphNode exprNode;
 
-        public virtual Application expand(Dictionary<string, Application> boundParams){
-            Application returnApp = null;
-            if(compositeFunc != null) returnApp = compositeFunc.expand(boundParams);
-            else returnApp = new Application(func, null, null);
+		public virtual Application expand(Dictionary<string, Application> boundParams){
 
-            if(this.positionalParams != null){
-                List<Application> appPosParams = new List<Application>();
+			if(boundParams != null) foreach(Application a in boundParams.Values){
+				a.result = null; //Clear result from application when entering a new function so that partial application works correctly in the interpreter
+			}
 
-                if(returnApp.positionalParams != null){
-                    foreach(Application a in returnApp.positionalParams){
-                        appPosParams.Add(a);
-                    }
-                }
+			Application returnApp = null;
+			if(compositeFunc != null) returnApp = compositeFunc.expand(boundParams);
+			else returnApp = new Application(func, null, null);
 
-                for(int i = 0; i < this.positionalParams.Length; i++){
-                    Application expApp = this.positionalParams[i].expand(boundParams);
-                    if(expApp != null) appPosParams.Add(expApp);
-                }
+			if(this.positionalParams != null){
+				List<Application> appPosParams = new List<Application>();
 
-                returnApp.positionalParams = appPosParams.ToArray();
-            }
+				if(returnApp.positionalParams != null){
+					foreach(Application a in returnApp.positionalParams){
+						appPosParams.Add(a);
+					}
+				}
 
-            if(this.namedParams != null){
-                Dictionary<string, Application> appNamedParams = returnApp.namedParams!=null?returnApp.namedParams:(new Dictionary<string, Application>());       
+				for(int i = 0; i < this.positionalParams.Length; i++){
+					Application expApp = this.positionalParams[i].expand(boundParams);
+					if(expApp != null) appPosParams.Add(expApp);
+				}
 
-                foreach(string key in this.namedParams.Keys){
-                    Application expApp = this.namedParams[key].expand(boundParams);
-                    if(expApp != null) appNamedParams.Add(key, expApp);
-                }
-                
-                returnApp.namedParams = appNamedParams;
-            }
+				returnApp.positionalParams = appPosParams.ToArray();
+			}
 
-            if(this.exprNode != null){
-                returnApp.appNode = this.exprNode;
-            }
+			if(this.namedParams != null){
+				Dictionary<string, Application> appNamedParams = returnApp.namedParams!=null?returnApp.namedParams:(new Dictionary<string, Application>());       
 
-            returnApp.isBreak = this.isBreak;
+				foreach(string key in this.namedParams.Keys){
+					Application expApp = this.namedParams[key].expand(boundParams);
+					if(expApp != null) appNamedParams.Add(key, expApp);
+				}
+				
+				returnApp.namedParams = appNamedParams;
+			}
 
-            return returnApp;
-        }
+			if(this.exprNode != null){
+				returnApp.appNode = this.exprNode;
+			}
 
-        public Expression(Function func, Expression[] positionalParams, Dictionary<string, Expression> namedParams){
-            this.func = func;
-            this.compositeFunc = null;
-            this.positionalParams = positionalParams;
-            this.namedParams = namedParams;
-        }
+			returnApp.isBreak = this.isBreak;
 
-        public Expression(Expression compositeFunc, Expression[] positionalParams, Dictionary<string, Expression> namedParams){
-            this.func = null;
-            this.compositeFunc = compositeFunc;
-            this.positionalParams = positionalParams;
-            this.namedParams = namedParams;
-        }
+			return returnApp;
+		}
 
-    }
+		public Expression(Function func, Expression[] positionalParams, Dictionary<string, Expression> namedParams){
+			this.func = func;
+			this.compositeFunc = null;
+			this.positionalParams = positionalParams;
+			this.namedParams = namedParams;
+		}
 
-    
+		public Expression(Expression compositeFunc, Expression[] positionalParams, Dictionary<string, Expression> namedParams){
+			this.func = null;
+			this.compositeFunc = compositeFunc;
+			this.positionalParams = positionalParams;
+			this.namedParams = namedParams;
+		}
+
+	}
+
+	
 }
